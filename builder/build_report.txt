@@ -1,28 +1,14 @@
-row 1 (Skip Hop Explore & More Activity Center): couldn't read page: site blocked the request (403)
-row 1 (Skip Hop Explore & More Activity Center): no photo found, card will show an icon
-row 2 (Baby Einstein Neptune's Ocean Discovery Jumper): couldn't read page: page not found (404)
-row 2 (Baby Einstein Neptune's Ocean Discovery Jumper): no photo found, card will show an icon
-row 3 (Ingenuity Keep Cozy 3-in-1 Bouncer & Rocker): couldn't read page: page not found (404)
-row 3 (Ingenuity Keep Cozy 3-in-1 Bouncer & Rocker): no photo found, card will show an icon
-row 6 (Bright Starts Learn-to-Sit Floor Seat): couldn't read page: page not found (404)
-row 6 (Bright Starts Learn-to-Sit Floor Seat): no photo found, card will show an icon
-row 7 (VTech Sit-to-Stand Learning Walker): no photo found, card will show an icon
-row 8 (Skip Hop Farmstand 5-in-1 Activity Walker): couldn't read page: site blocked the request (403)
-row 8 (Skip Hop Farmstand 5-in-1 Activity Walker): no photo found, card will show an icon
-row 9 (Baby Einstein 4-in-1 Kickin' Tunes Play Gym): couldn't read page: page not found (404)
-row 9 (Baby Einstein 4-in-1 Kickin' Tunes Play Gym): no photo found, card will show an icon
-row 17 (Lovevery The Play Gym): no photo found, card will show an icon
-row 19 (Baby Einstein Around We Grow 4-in-1 Discovery Center): couldn't read page: page not found (404)
-row 19 (Baby Einstein Around We Grow 4-in-1 Discovery Center): no photo found, card will show an icon
-row 22 (Fisher-Price Power Wheels Jeep Wrangler): couldn't read page: page not found (404)
-row 22 (Fisher-Price Power Wheels Jeep Wrangler): no photo found, card will show an icon
-row 30 (Fisher-Price Think & Learn Smart Cycle): couldn't read page: timed out
-row 30 (Fisher-Price Think & Learn Smart Cycle): no photo found, card will show an icon
-row 31 (VTech Sit-to-Stand Ultimate Alphabet Train): no photo found, card will show an icon
-row 32 (Skip Hop Moby Smart Sling 3-Stage Bathtub): couldn't read page: site blocked the request (403)
-row 32 (Skip Hop Moby Smart Sling 3-Stage Bathtub): no photo found, card will show an icon
-row 33 (Summer Infant My Bath Seat): couldn't read page: page not found (404)
-row 33 (Summer Infant My Bath Seat): no photo found, card will show an icon
-row 36 (Ciao Baby Portable High Chair): couldn't read page: site blocked the request (403)
-row 36 (Ciao Baby Portable High Chair): no photo found, card will show an icon
-row 38 (Bumbo Floor Seat): no photo found, card will show an icon
+row 1 (Ingenuity Keep Cozy 3-in-1 Bouncer & Rocker): couldn't read page: page not found (404)
+row 1 (Ingenuity Keep Cozy 3-in-1 Bouncer & Rocker): no photo found, card will show an icon
+row 4 (Bright Starts Learn-to-Sit Floor Seat): couldn't read page: page not found (404)
+row 4 (Bright Starts Learn-to-Sit Floor Seat): no photo found, card will show an icon
+row 13 (Baby Einstein Around We Grow 4-in-1 Discovery Center): couldn't read page: page not found (404)
+row 13 (Baby Einstein Around We Grow 4-in-1 Discovery Center): no photo found, card will show an icon
+row 16 (Fisher-Price Power Wheels Jeep Wrangler): couldn't read page: page not found (404)
+row 16 (Fisher-Price Power Wheels Jeep Wrangler): no photo found, card will show an icon
+row 24 (Fisher-Price Think & Learn Smart Cycle): couldn't read page: timed out
+row 24 (Fisher-Price Think & Learn Smart Cycle): no photo found, card will show an icon
+row 25 (Summer Infant My Bath Seat): couldn't read page: page not found (404)
+row 25 (Summer Infant My Bath Seat): no photo found, card will show an icon
+row 29 (Bumbo Floor Seat): no photo found, card will show an icon
+row 42 (Skip Hop Baby Bath Tub 4-in-1 Grow with Baby Infant to Toddler Bathtub with Supportive Sling and Sit-Up Support Wave Age 0m+): no price found (card just won't show one)
