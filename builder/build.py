@@ -239,7 +239,8 @@ def main():
         label = row.get("name") or row.get("url")
         meta = {}
 
-        if row.get("url"):
+        # Rows from the "Add to Loop" button already have a name and photo: no need to visit the page.
+        if row.get("url") and not (row.get("photo") and row.get("name")):
             try:
                 meta = scrape(row["url"])
                 time.sleep(0.5)
