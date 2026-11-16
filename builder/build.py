@@ -1,178 +1,57 @@
 #!/usr/bin/env python3
 """
-Loop deck builder.
+Loop deck builder (v2: category deck).
 
 Normally run by GitHub Actions (.github/workflows/build.yml). It reads the
-"Products" tab of the Loop Google Sheet (via the Apps Script URL in the
+"Categories" tab of the Loop Google Sheet (via the Apps Script URL in the
 LOOP_SHEET_URL setting) and writes index.html + img/ into the site folder.
-Without LOOP_SHEET_URL it falls back to products.csv next to this file.
+Without LOOP_SHEET_URL it falls back to categories.csv next to this file.
 
-For each row it fills in whatever you left blank: name, photo, price, blurb.
-It reads the page's structured product data (schema.org JSON-LD) first, then
-Open Graph tags. Anything you typed yourself in the CSV always wins.
+One row per category: name, order, color, icon, sqft, intake_only, and three
+"hero" versions (name + photo link). Anything in "hide" drops the row.
 
-Photos are downloaded, shrunk, and saved into img/, so the game never
-depends on a retailer's server while friends are playing.
-
-Rows it couldn't fill go into build_report.txt so you know which to fix by hand.
-Amazon and some big-box sites block automated requests; use the brand's own
-product page instead (it usually has the cleanest photo anyway).
+Hero photos are downloaded, shrunk and saved into img/, so the game never
+depends on a retailer's server while friends are playing. If a download fails,
+the photo from the last good build is kept; if there never was one, that tile
+shows the product name on a colored square instead. Problems go to
+build_report.txt and the Actions run summary.
 """
-import csv, hashlib, html, io, json, os, re, sys, time
+import csv, hashlib, io, json, os, re, sys
 from pathlib import Path
-from urllib.parse import urljoin
 
 import requests
-from bs4 import BeautifulSoup
 from PIL import Image
 
 HERE = Path(__file__).parent
-CSV_PATH = HERE / "products.csv"
+CSV_PATH = HERE / "categories.csv"
 TEMPLATE = HERE / "template.html"
 SHEET_URL = os.environ.get("LOOP_SHEET_URL", "").strip()
 DIST = Path(os.environ.get("LOOP_OUT") or HERE / "dist")
 IMG_DIR = DIST / "img"
-CACHE = HERE / ".cache"          # fetched page metadata, so re-runs are fast
 REPORT = HERE / "build_report.txt"
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/128.0 Safari/537.36")
-HEADERS = {"User-Agent": UA, "Accept-Language": "en-US,en;q=0.9"}
-IMG_MAX = 640                    # px, longest side
-BLURB_MAX = 110                  # characters
-
-# category keyword -> fallback icon when no photo
-ICON_RULES = [("bath", "bath"), ("swing", "seat"), ("gym", "mat"), ("mat", "mat"),
-              ("walker", "mobility"), ("ride", "mobility"), ("climb", "mobility"),
-              ("jump", "mobility"), ("table", "sound"), ("toy", "sound")]
+HEADERS = {"User-Agent": UA, "Accept-Language": "en-US,en;q=0.9", "Accept": "image/*"}
+IMG_MAX = 480                        # px, longest side (tiles are small)
+PALETTE = ["#FF6B4A", "#FFD23F", "#7EC8F2", "#7BC74D"]
 
 
-def icon_for(category):
-    c = (category or "").lower()
-    for kw, icon in ICON_RULES:
-        if kw in c:
-            return icon
-    return "seat"
+def why(e):
+    resp = getattr(e, "response", None)
+    if resp is not None:
+        return {403: "site blocked the request (403)", 404: "photo not found (404)",
+                429: "rate-limited, try again later (429)"}.get(resp.status_code, f"HTTP {resp.status_code}")
+    if isinstance(e, requests.exceptions.Timeout):
+        return "timed out"
+    if isinstance(e, requests.exceptions.ConnectionError):
+        return "couldn't connect"
+    return type(e).__name__
 
 
-def clean(text):
-    text = html.unescape(re.sub(r"<[^>]+>", " ", text or ""))
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def shorten(text, n=BLURB_MAX):
-    text = clean(text)
-    first_sentence = re.split(r"(?<=[.!?])\s", text, maxsplit=1)[0]
-    if 25 <= len(first_sentence) <= n:
-        return first_sentence
-    if len(text) <= n:
-        return text
-    cut = text[:n].rsplit(" ", 1)[0].rstrip(",;:-")
-    return cut + "…"
-
-
-# ---------------- page metadata ----------------
-def find_product_ld(data):
-    """Walk JSON-LD (dicts, lists, @graph) and return the first Product node."""
-    if isinstance(data, list):
-        for d in data:
-            hit = find_product_ld(d)
-            if hit:
-                return hit
-    elif isinstance(data, dict):
-        t = data.get("@type")
-        types = t if isinstance(t, list) else [t]
-        if any(str(x).lower() in ("product", "productgroup") for x in types):
-            return data
-        for key in ("@graph", "mainEntity", "itemListElement"):
-            if key in data:
-                hit = find_product_ld(data[key])
-                if hit:
-                    return hit
-    return None
-
-
-def first(v):
-    if isinstance(v, list):
-        return first(v[0]) if v else None
-    if isinstance(v, dict):
-        return v.get("url") or v.get("contentUrl") or v.get("@id")
-    return v
-
-
-def ld_price(offers):
-    if isinstance(offers, list):
-        for o in offers:
-            p = ld_price(o)
-            if p:
-                return p
-        return None
-    if isinstance(offers, dict):
-        for k in ("price", "lowPrice", "highPrice"):
-            if offers.get(k) not in (None, ""):
-                return offers[k]
-        if "priceSpecification" in offers:
-            return ld_price(offers["priceSpecification"])
-    return None
-
-
-def scrape(url):
-    key = hashlib.sha1(url.encode()).hexdigest()[:16]
-    cached = CACHE / f"{key}.json"
-    if cached.exists():
-        return json.loads(cached.read_text())
-
-    r = requests.get(url, headers=HEADERS, timeout=20)
-    r.raise_for_status()
-    soup = BeautifulSoup(r.text, "html.parser")
-    meta = {}
-
-    for tag in soup.find_all("script", type="application/ld+json"):
-        try:
-            data = json.loads(tag.string or "")
-        except Exception:
-            continue
-        prod = find_product_ld(data)
-        if prod:
-            if prod.get("hasVariant") and not prod.get("offers"):
-                prod = {**first_variant(prod), **{k: v for k, v in prod.items() if v}}
-            brand = prod.get("brand")
-            brand = brand.get("name") if isinstance(brand, dict) else brand
-            meta.update({
-                "name": clean(prod.get("name")),
-                "brand": clean(brand) if brand else "",
-                "photo": first(prod.get("image")),
-                "description": clean(prod.get("description")),
-                "price": ld_price(prod.get("offers")),
-            })
-            break
-
-    def og(prop):
-        t = soup.find("meta", attrs={"property": prop}) or soup.find("meta", attrs={"name": prop})
-        return t.get("content") if t and t.get("content") else None
-
-    meta.setdefault("name", None)
-    meta["name"] = meta.get("name") or clean(og("og:title") or (soup.title.string if soup.title else ""))
-    meta["photo"] = meta.get("photo") or og("og:image") or og("twitter:image")
-    meta["description"] = meta.get("description") or clean(og("og:description") or og("description"))
-    meta["price"] = meta.get("price") or og("product:price:amount") or og("og:price:amount")
-    if meta.get("photo"):
-        meta["photo"] = urljoin(url, meta["photo"])
-
-    CACHE.mkdir(exist_ok=True)
-    cached.write_text(json.dumps(meta))
-    return meta
-
-
-def first_variant(prod):
-    v = prod.get("hasVariant")
-    return v[0] if isinstance(v, list) and v and isinstance(v[0], dict) else {}
-
-
-# ---------------- images ----------------
 def save_image(src, item_id):
     out = IMG_DIR / f"{item_id}.jpg"
-    r = requests.get(src, headers={**HEADERS, "Accept": "image/*"}, timeout=25)
+    r = requests.get(src, headers=HEADERS, timeout=25)
     r.raise_for_status()
     im = Image.open(io.BytesIO(r.content))
     im.load()
@@ -188,130 +67,94 @@ def save_image(src, item_id):
     return f"img/{out.name}"
 
 
-# ---------------- main ----------------
-def why(e):
-    """Short, human reason for a failure."""
-    resp = getattr(e, "response", None)
-    if resp is not None:
-        code = resp.status_code
-        return {403: "site blocked the request (403)", 404: "page not found (404)",
-                429: "rate-limited, try again later (429)"}.get(code, f"HTTP {code}")
-    if isinstance(e, requests.exceptions.Timeout):
-        return "timed out"
-    if isinstance(e, requests.exceptions.ConnectionError):
-        return "couldn't connect"
-    return type(e).__name__
-
-
-def to_price(v):
-    if v in (None, ""):
-        return None
-    m = re.search(r"\d+(?:\.\d+)?", str(v).replace(",", ""))
-    return round(float(m.group())) if m else None
-
-
 def load_rows():
     if SHEET_URL:
-        r = requests.get(SHEET_URL, params={"action": "products"}, timeout=30)
+        r = requests.get(SHEET_URL, params={"action": "categories"}, timeout=30)
         r.raise_for_status()
         rows = r.json()
-        print(f"Read {len(rows)} products from the Google Sheet")
+        print(f"Read {len(rows)} categories from the Google Sheet")
         return rows
-    print("LOOP_SHEET_URL not set, reading products.csv")
+    print("LOOP_SHEET_URL not set, reading categories.csv")
     return list(csv.DictReader(CSV_PATH.open(newline="", encoding="utf-8-sig")))
 
 
-def stable_id(row):
-    key = (row.get("url") or row.get("name") or "").lower()
-    return "p" + hashlib.sha1(key.encode()).hexdigest()[:8]
+def slug(text):
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "x"
+
+
+def num(v, default=0):
+    m = re.search(r"\d+(?:\.\d+)?", str(v or ""))
+    return float(m.group()) if m else default
 
 
 def main():
-    rows = load_rows()
+    rows = [{k.strip().lower(): (v or "").strip() for k, v in r.items() if k} for r in load_rows()]
+    rows = [r for r in rows if r.get("category") and not r.get("hide")]
+    rows.sort(key=lambda r: num(r.get("order"), 999))
     IMG_DIR.mkdir(parents=True, exist_ok=True)
 
-    items, problems = [], []
-    for n, row in enumerate(rows, 1):
-        row = {k: (v or "").strip() for k, v in row.items()}
-        if not (row.get("url") or row.get("name")):
-            continue
-        item_id = stable_id(row)
-        label = row.get("name") or row.get("url")
-        meta = {}
-
-        # Rows from the "Add to Loop" button already have a name and photo: no need to visit the page.
-        if row.get("url") and not (row.get("photo") and row.get("name")):
-            try:
-                meta = scrape(row["url"])
-                time.sleep(0.5)
-            except Exception as e:
-                problems.append(f"row {n} ({label}): couldn't read page: {why(e)}")
-
-        name = row.get("name") or meta.get("name") or ""
-        # trim retailer suffixes like " | Target" or " - Amazon.com"
-        name = re.split(r"\s+[|–—]\s+|\s+-\s+(?=[A-Z][\w.]+$)", name)[0].strip()
-        brand = meta.get("brand") or ""
-        if name and brand and not row.get("name") and brand.lower() not in name.lower():
-            name = f"{brand} {name}"
-        category = row.get("category") or ""
-        price = to_price(row.get("price")) or to_price(meta.get("price"))
-        blurb = shorten(row.get("blurb") or meta.get("description") or "")
-        photo_src = row.get("photo") or meta.get("photo")
-
-        photo = None
-        kept = IMG_DIR / f"{item_id}.jpg"
-        if photo_src:
-            try:
-                photo = save_image(photo_src, item_id)
-            except Exception as e:
-                if kept.exists():   # keep the photo from a previous successful build
-                    photo = f"img/{kept.name}"
-                else:
-                    problems.append(f"row {n} ({label}): photo failed, card will show an icon: {why(e)}")
-        elif kept.exists():
-            photo = f"img/{kept.name}"
-        else:
-            problems.append(f"row {n} ({label}): no photo found, card will show an icon")
-
-        if not name:
-            problems.append(f"row {n}: no name found, skipped")
-            continue
-        if not category:
-            problems.append(f"row {n} ({name}): no category, add one in the CSV")
-        if not price:
-            problems.append(f"row {n} ({name}): no price found (card just won't show one)")
-
-        item = {"id": item_id, "name": name, "category": category or "Baby gear",
-                "price": price, "icon": icon_for(category), "blurb": blurb}
-        if photo:
-            item["photo"] = photo
-        items.append(item)
-        print(f"  {'✓' if photo else '·'} {name}")
+    cats, problems, used = [], [], set()
+    for n, row in enumerate(rows):
+        name = row["category"]
+        heroes = []
+        for i in (1, 2, 3):
+            hname, src = row.get(f"hero{i}_name", ""), row.get(f"hero{i}_photo", "")
+            if not hname:
+                continue
+            hero = {"name": hname}
+            pid = "h" + hashlib.sha1(f"{name}|{hname}".lower().encode()).hexdigest()[:8]
+            kept = IMG_DIR / f"{pid}.jpg"
+            if src:
+                try:
+                    hero["photo"] = save_image(src, pid)
+                except Exception as e:
+                    if kept.exists():
+                        hero["photo"] = f"img/{kept.name}"
+                        problems.append(f"{name} / {hname}: new photo failed ({why(e)}), kept the old one")
+                    else:
+                        problems.append(f"{name} / {hname}: photo failed ({why(e)}), tile shows the name instead")
+            elif kept.exists():
+                hero["photo"] = f"img/{kept.name}"
+            else:
+                problems.append(f"{name} / {hname}: no photo link, tile shows the name instead")
+            if "photo" in hero:
+                used.add(f"{pid}.jpg")
+            heroes.append(hero)
+        if not heroes:
+            problems.append(f"{name}: no hero versions, card only offers 'Something else'")
+        color = row.get("color") if re.fullmatch(r"#[0-9a-fA-F]{6}", row.get("color", "")) else PALETTE[n % 4]
+        cats.append({
+            "id": slug(name), "name": name, "color": color,
+            "icon": row.get("icon") or "ti-box", "sqft": num(row.get("sqft")),
+            "intake_only": row.get("intake_only", "").lower() in ("yes", "y", "true", "1"),
+            "heroes": heroes,
+        })
+        print(f"  {name}: {sum('photo' in h for h in heroes)}/{len(heroes)} photos")
 
     tpl = TEMPLATE.read_text()
-    marker = "/*__ITEMS__*/[]"
-    assert marker in tpl, "template.html is missing the ITEMS marker"
-    payload = json.dumps(items, ensure_ascii=False, indent=1).replace("</", "<\\/")
-    page = tpl.replace(marker, payload).replace("__SHEET_URL__", SHEET_URL)
-    (DIST / "index.html").write_text(page)
+    marker = "/*__CATS__*/[]"
+    assert marker in tpl, "template.html is missing the CATS marker"
+    payload = json.dumps(cats, ensure_ascii=False, indent=1).replace("</", "<\\/")
+    (DIST / "index.html").write_text(tpl.replace(marker, payload).replace("__SHEET_URL__", SHEET_URL))
 
-    used = {i["photo"].split("/")[-1] for i in items if "photo" in i}
-    for old in IMG_DIR.glob("*.jpg"):      # drop photos of removed products
+    for old in IMG_DIR.glob("*.jpg"):      # drop photos nothing uses any more
         if old.name not in used:
             old.unlink()
 
-    report = "\n".join(problems) + "\n" if problems else "All good.\n"
-    REPORT.write_text(report)
+    n_photos = sum("photo" in h for c in cats for h in c["heroes"])
+    n_heroes = sum(len(c["heroes"]) for c in cats)
+    REPORT.write_text("\n".join(problems) + "\n" if problems else "All good.\n")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a") as f:
-            f.write(f"### Built {len(items)} cards ({sum('photo' in i for i in items)} with photos)\n\n")
+            f.write(f"### Built {len(cats)} category cards ({n_photos} of {n_heroes} hero photos)\n\n")
             f.write("".join(f"- {p}\n" for p in problems) or "All good.\n")
-    print(f"\nBuilt {len(items)} cards -> {DIST / 'index.html'}  "
-          f"({sum('photo' in i for i in items)} with photos)")
+    print(f"\nBuilt {len(cats)} cards -> {DIST / 'index.html'}  ({n_photos} of {n_heroes} hero photos)")
     if problems:
         print(f"{len(problems)} things to check -> build_report.txt")
+    if not cats:
+        sys.exit("No categories found: check the Categories tab.")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

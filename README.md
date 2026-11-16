@@ -1,9 +1,11 @@
 # Loop
 
-Swipe game for collecting what baby gear parents have, and what they're ready to pass on.
+Intake game for collecting what baby gear parents have, and what they're done with.
 
-- **Products** live in the Loop Google Sheet, Products tab. Paste a product page link and a category; the build fills in the photo, name, price and blurb.
-- **Answers** land in the same Sheet (Responses and Swipes tabs).
-- **The site rebuilds** every night, or right away from Actions → Build Loop deck → Run workflow. Each run's summary lists products that came out without a photo or price.
+- **Categories** live in the Loop Google Sheet, Categories tab: one row per kind of gear, in deck order, with three "hero" versions (name + photo link) each. Anything in `hide` drops the row. `intake_only` marks categories we count but don't transact yet.
+- **The game:** category card (Nope / Got one) → "Which one?" photo grid (3 heroes + Something else) → status check (Still using it / Taking up space / Saving it for baby #2). Email after card 3; first name, baby's birthday/due date and neighborhood after the last card.
+- **Answers** land in the same Sheet: Responses (one row per player, saved from the email screen on, so partial plays count) and Swipes (one row per category answered).
+- **The site rebuilds** every night, on changes to `builder/`, or right away from Actions → Build Loop deck → Run workflow. Hero photos are downloaded into `img/`; if one fails, the last good copy is kept. Each run's summary lists anything to fix.
 
-`builder/Code.gs` is a copy of the Sheet's Apps Script, for reference.
+`builder/Code.gs` is a copy of the Sheet's Apps Script, for reference. The "Add to Loop" key is replaced with `KEY_HERE`; the real one lives only in the Sheet's script editor.
+`builder/categories.csv` is the fallback the build uses when `LOOP_SHEET_URL` isn't set.

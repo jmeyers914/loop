@@ -3,598 +3,389 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Loop — What's cluttering your place?</title>
-<meta name="description" content="Swipe through baby gear — tell us what you've got in about a minute.">
-<meta property="og:title" content="Got baby gear cluttering up your place?">
-<meta property="og:description" content="Swipe through baby gear. 60 seconds, no typing.">
+<title>Loop: what's taking up space?</title>
+<meta name="description" content="Tap through baby gear and tell us what you have. About a minute.">
+<meta property="og:title" content="Got baby gear taking up space?">
+<meta property="og:description" content="Tap through baby gear. About a minute, no typing until the end.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400..600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=DM+Sans:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
 <style>
   :root{
-    --ink: #3A2E4D;
-    --ink-soft: #7D7191;
-    --paper: #FFFBF2;
-    --paper-soft: #FFF1D6;
-    --paper-line: #FFE3A3;
-    --coral: #FF7A5C;
-    --coral-deep: #E85D3D;
-    --sunshine: #FFC233;
-    --sky: #2CA9E1;
-    --grass: #4CAF7D;
-    --red: #E8523A;
-    --white: #FFFFFF;
+    --ink:#1F3A2E; --ink-soft:#5C7A6A; --paper:#FFFDF7; --paper-2:#F4EEDF; --line:#E6DEC8;
+    --coral:#FF6B4A; --sun:#FFD23F; --sky:#7EC8F2; --grass:#7BC74D; --white:#FFFFFF;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%;}
-  body{
-    margin:0; background:var(--paper); color:var(--ink);
-    font-family:'Inter', sans-serif; overflow:hidden;
-    -webkit-font-smoothing:antialiased;
-  }
-  h1,h2,h3{font-family:'Fraunces', serif; font-weight:500; letter-spacing:-0.01em; margin:0;}
-  .mono{font-family:'IBM Plex Mono', monospace;}
-  button{font-family:'Inter', sans-serif;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'DM Sans',sans-serif; font-weight:500;
+    overflow:hidden; -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Fraunces',serif; font-style:italic; font-weight:600; letter-spacing:-0.01em; margin:0; line-height:1.08;}
+  button{font-family:inherit; color:inherit;}
   @media (prefers-reduced-motion: reduce){ *{transition-duration:0.001ms !important; animation-duration:0.001ms !important;} }
 
-  .app{
-    position:relative; height:100dvh; width:100%; max-width:480px; margin:0 auto;
-    display:flex; flex-direction:column; overflow:hidden;
-  }
+  .app{position:relative; height:100dvh; width:100%; max-width:460px; margin:0 auto; display:flex; flex-direction:column; overflow:hidden;}
 
-  /* ---------- top bar ---------- */
-  .topbar{ display:flex; align-items:center; gap:12px; padding:16px 20px 8px; }
-  .logo{ font-family:'Fraunces', serif; font-weight:600; font-size:1.15rem; display:flex; align-items:center; gap:6px; }
-  .logo svg{width:18px; height:18px;}
-  .progress-track{
-    flex:1; height:6px; background:var(--paper-soft); border-radius:100px; overflow:hidden;
-    border:1px solid var(--paper-line);
-  }
-  .progress-fill{ height:100%; background:var(--coral); border-radius:100px; width:0%; transition:width 0.3s ease; }
-  .progress-count{ font-family:'IBM Plex Mono', monospace; font-size:0.72rem; color:var(--ink-soft); white-space:nowrap; }
+  /* top bar: logo + progress */
+  .topbar{display:flex; align-items:center; gap:12px; padding:16px 20px 6px;}
+  .logo{font-family:'Fraunces',serif; font-style:italic; font-weight:600; font-size:1.2rem;}
+  .bar{flex:1; height:10px; border-radius:99px; background:var(--paper-2); border:2px solid var(--ink); overflow:hidden;}
+  .bar-fill{height:100%; width:0; background:var(--coral); transition:width .35s ease;}
 
-  /* ---------- card stack ---------- */
-  .stage{ flex:1; position:relative; padding:10px 20px 8px; }
-  .card{
-    position:absolute; inset:10px 20px 8px; border-radius:22px; background:var(--white);
-    box-shadow:0 10px 30px rgba(58,46,77,0.12); overflow:hidden;
-    display:flex; flex-direction:column;
-    touch-action:none; will-change:transform; user-select:none; -webkit-user-select:none;
-    border:1px solid var(--paper-line); cursor:grab;
-  }
-  .card:active{ cursor:grabbing; }
-  .card .media{
-    flex:1; background:var(--white); border-bottom:1px solid var(--paper-soft); display:flex; align-items:center; justify-content:center;
-    position:relative; min-height:0;
-  }
-  .card .media img{ width:100%; height:100%; object-fit:contain; padding:24px; pointer-events:none; -webkit-user-drag:none; }
-  .card .media:has(.icon-wrap){ background:var(--paper-soft); }
-  .card .media .icon-wrap svg{ width:96px; height:96px; stroke:var(--coral-deep); fill:none; stroke-width:1.4; opacity:0.8; }
-  .card .info{ padding:18px 22px 22px; }
-  .card .cat{
-    font-family:'IBM Plex Mono', monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;
-    color:var(--sky); font-weight:500;
-  }
-  .card h2{ font-size:1.4rem; margin-top:6px; line-height:1.2; }
-  .card .blurb{
-    font-size:0.88rem; color:var(--ink-soft); margin-top:6px; line-height:1.4;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-  }
-  .card .price{ font-family:'IBM Plex Mono', monospace; font-size:0.82rem; color:var(--ink-soft); margin-top:4px; }
+  .stage{flex:1; position:relative; padding:14px 20px 0; min-height:0;}
 
-  .stamp{
-    position:absolute; top:28px; padding:8px 18px; border-radius:10px; font-weight:700; z-index:2;
-    font-size:1.3rem; text-transform:uppercase; letter-spacing:0.03em; border:3px solid; background:rgba(255,255,255,0.85);
-    opacity:0; pointer-events:none; transform:rotate(-12deg);
-  }
-  .stamp.yes{ left:24px; color:var(--grass); border-color:var(--grass); }
-  .stamp.no{ right:24px; color:var(--red); border-color:var(--red); transform:rotate(12deg); }
+  /* press-down buttons */
+  .btn{display:block; width:100%; border:2px solid var(--ink); border-radius:14px; background:var(--white);
+    padding:13px 14px; font-weight:700; font-size:1rem; cursor:pointer; box-shadow:0 4px 0 var(--ink);
+    transition:transform .08s ease, box-shadow .08s ease; text-align:center;}
+  .btn:active, .btn.pressed{transform:translateY(4px); box-shadow:0 0 0 var(--ink);}
+  .btn.coral{background:var(--coral); color:var(--paper);}
+  .btn.sun{background:var(--sun);}
+  .btn.sky{background:var(--sky);}
+  .btn:disabled{opacity:.6; cursor:default;}
+  .link{background:none; border:none; color:var(--ink-soft); font-size:.88rem; text-decoration:underline; cursor:pointer; padding:8px;}
 
-  /* ---------- sub-prompt (still using / ready to ditch) ---------- */
-  .sub-prompt{
-    position:absolute; inset:0; background:var(--white); border-radius:22px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:32px; text-align:center; gap:18px; cursor:default;
-  }
-  .sub-prompt .emoji{ font-size:2.6rem; }
-  .sub-prompt h3{ font-size:1.3rem; }
-  .sub-prompt-btns{ display:flex; flex-direction:column; gap:10px; width:100%; margin-top:6px; }
-  .sub-btn{
-    padding:14px 18px; border-radius:14px; border:2px solid var(--paper-line); background:var(--paper);
-    font-weight:600; font-size:0.98rem; cursor:pointer; color:var(--ink);
-  }
-  .sub-btn:hover{ border-color:var(--coral); background:var(--paper-soft); }
-  .sub-back{ background:none; border:none; color:var(--ink-soft); font-size:0.82rem; text-decoration:underline; cursor:pointer; }
+  /* category card */
+  .card{position:absolute; inset:14px 20px 0; display:flex; flex-direction:column; justify-content:center; touch-action:none; user-select:none;
+    -webkit-user-select:none; will-change:transform; cursor:grab;}
+  .arch{flex:0 1 auto; height:min(52dvh, 340px); min-height:180px; border-radius:999px 999px 22px 22px; border:2px solid var(--ink); display:flex;
+    align-items:flex-end; justify-content:center; padding-bottom:12%; font-size:min(30vw,128px); position:relative;}
+  .arch i{line-height:1;}
+  .card h1{font-size:2.1rem; margin:18px 0 6px;}
+  .card .eg{color:var(--ink-soft); font-size:.95rem; min-height:1.3em;}
+  .stamp{position:absolute; top:22%; padding:6px 14px; border:3px solid var(--ink); border-radius:12px; background:var(--paper);
+    font-weight:700; font-size:1.2rem; opacity:0; pointer-events:none;}
+  .stamp.yes{left:12px; transform:rotate(-12deg);}
+  .stamp.no{right:12px; transform:rotate(12deg);}
+  .actions{display:flex; gap:12px; padding:16px 20px max(18px, env(safe-area-inset-bottom));}
+  .actions .btn{flex:1;}
+  .actions.off{visibility:hidden;}
 
-  /* ---------- action buttons ---------- */
-  .actions{ display:flex; justify-content:center; align-items:center; gap:28px; padding:14px 20px 10px; }
-  .actions.disabled{ visibility:hidden; }
-  .action-btn{
-    width:62px; height:62px; border-radius:50%; border:none; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(58,46,77,0.15);
-    transition:transform 0.12s ease;
-  }
-  .action-btn:active{ transform:scale(0.92); }
-  .action-btn.no{ background:var(--white); border:2px solid #FBD8D0; }
-  .action-btn.no svg{ stroke:var(--red); }
-  .action-btn.yes{ background:var(--coral); }
-  .action-btn.yes svg{ stroke:var(--white); }
-  .action-btn svg{ width:26px; height:26px; fill:none; stroke-width:2.4; stroke-linecap:round; }
+  /* which one / status panels */
+  .panel{position:absolute; inset:14px 20px 0; display:flex; flex-direction:column; overflow-y:auto; padding-bottom:12px;}
+  .panel .kicker{font-size:.85rem; color:var(--ink-soft); margin-bottom:4px;}
+  .panel h1{font-size:2rem; margin-bottom:16px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .tile{border:2px solid var(--ink); border-radius:14px; overflow:hidden; background:var(--white); box-shadow:0 4px 0 var(--ink);
+    cursor:pointer; padding:0; text-align:left; display:flex; flex-direction:column; transition:transform .08s ease, box-shadow .08s ease;}
+  .tile:active{transform:translateY(4px); box-shadow:0 0 0 var(--ink);}
+  .tile .ph{aspect-ratio:1/1; background:var(--white); display:flex; align-items:center; justify-content:center; padding:8px; border-bottom:2px solid var(--ink);}
+  .tile .ph img{width:100%; height:100%; object-fit:contain;}
+  .tile .ph.name{padding:12px; font-family:'Fraunces',serif; font-style:italic; font-size:1.05rem; text-align:center; line-height:1.15;}
+  .tile .tl{font-size:.82rem; font-weight:700; padding:8px 9px; line-height:1.2; min-height:2.6em;}
+  .tile.other{border-style:dashed; box-shadow:none; background:var(--paper);}
+  .tile.other .ph{background:var(--paper); font-size:2.4rem; color:var(--ink-soft); border-bottom-style:dashed;}
+  .opt{text-align:left; margin-bottom:12px; padding:12px 14px;}
+  .opt b{display:block; font-size:1.02rem;}
+  .opt span{display:block; font-size:.85rem; font-weight:500; opacity:.85; margin-top:2px;}
 
-  .footer-row{
-    display:flex; justify-content:space-between; align-items:center; gap:12px;
-    padding:0 24px max(14px, env(safe-area-inset-bottom));
-  }
-  .hint{ font-size:0.8rem; color:var(--ink-soft); margin:0; }
-  .done-early{
-    background:none; border:none; color:var(--coral-deep); font-size:0.8rem; font-weight:600;
-    cursor:pointer; padding:4px 0; white-space:nowrap;
-  }
+  /* toast */
+  .toast{position:fixed; left:50%; top:52px; transform:translate(-50%, -12px); background:var(--grass); color:var(--ink);
+    border:2px solid var(--ink); border-radius:99px; padding:8px 18px; font-weight:700; opacity:0; pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease; z-index:200; white-space:nowrap;}
+  .toast.show{opacity:1; transform:translate(-50%, 0);}
 
-  /* ---------- overlays ---------- */
-  .overlay{
-    position:fixed; inset:0; background:rgba(58,46,77,0.55); backdrop-filter:blur(3px);
-    display:flex; align-items:center; justify-content:center; z-index:100; padding:16px;
-  }
-  .overlay-card{
-    background:var(--white); border-radius:24px; max-width:420px; width:100%;
-    padding:32px 24px 24px; text-align:center; max-height:90dvh; overflow-y:auto;
-  }
-  .overlay-card .eyebrow{
-    font-family:'IBM Plex Mono', monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;
-    color:var(--coral-deep); background:var(--paper-soft); display:inline-block; padding:6px 12px; border-radius:100px;
-    margin-bottom:16px;
-  }
-  .overlay-card h1{ font-size:1.7rem; line-height:1.2; }
-  .overlay-card p{ color:var(--ink-soft); margin-top:14px; font-size:0.98rem; line-height:1.55; text-align:left; }
-  .overlay-card .cta{
-    margin-top:22px; width:100%; padding:16px; border-radius:100px; border:none; background:var(--coral);
-    color:var(--white); font-weight:700; font-size:1.05rem; cursor:pointer;
-  }
-  .overlay-card .cta:hover{ background:var(--coral-deep); }
-  .overlay-card .cta:disabled{ opacity:0.6; cursor:default; }
-  .overlay-card .subnote{ margin-top:14px; font-size:0.78rem; color:var(--ink-soft); text-align:center; }
-
-  .gate-card h1, .ask-card h1{ font-size:1.5rem; }
-  .gate-form{ text-align:left; margin-top:18px; display:flex; flex-direction:column; gap:14px; }
-  .gate-form label{ font-size:0.85rem; font-weight:600; display:block; margin-bottom:6px; }
-  .gate-form label .opt{ font-weight:400; color:var(--ink-soft); }
-  .gate-form input, .gate-form textarea{
-    width:100%; padding:13px; border-radius:10px; border:1.5px solid var(--paper-line);
-    background:var(--paper); font-family:'Inter', sans-serif; font-size:16px; color:var(--ink);
-  }
-  .gate-form textarea{ resize:vertical; min-height:72px; line-height:1.4; }
-  .gate-form input:focus, .gate-form textarea:focus{ outline:none; border-color:var(--coral); }
-  .text-btn{
-    background:none; border:none; color:var(--ink-soft); font-size:0.85rem; text-decoration:underline;
-    cursor:pointer; margin-top:12px;
-  }
-
-  .finish-card .big-emoji{ font-size:3rem; }
-  .finish-stats{ display:flex; gap:12px; margin-top:20px; }
-  .finish-stat{ flex:1; background:var(--paper-soft); border-radius:14px; padding:16px 10px; text-align:center; }
-  .finish-stat .num{ font-family:'Fraunces', serif; font-size:1.6rem; color:var(--coral-deep); }
-  .finish-stat .lbl{ font-size:0.72rem; color:var(--ink-soft); margin-top:2px; }
-  .share-btn{
-    margin-top:12px; width:100%; padding:14px; border-radius:100px; border:2px solid var(--paper-line);
-    background:var(--white); font-weight:600; cursor:pointer; color:var(--ink); font-size:0.98rem;
-  }
-  .share-note{ font-size:0.78rem; color:var(--grass); margin-top:8px; min-height:1em; text-align:center; }
-
-  .hidden{ display:none !important; }
+  /* overlays */
+  .overlay{position:fixed; inset:0; background:var(--paper); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px;}
+  .sheet{max-width:420px; width:100%; max-height:100dvh; overflow-y:auto; padding:8px 4px;}
+  .sheet .kicker{display:inline-block; background:var(--sun); border:2px solid var(--ink); border-radius:99px; padding:4px 12px; font-size:.8rem; font-weight:700; margin-bottom:16px;}
+  .sheet h1{font-size:2.2rem;}
+  .sheet p{color:var(--ink-soft); font-size:1rem; line-height:1.5; margin:14px 0 0;}
+  .sheet .btn{margin-top:22px;}
+  .form{display:flex; flex-direction:column; gap:14px; margin-top:20px;}
+  .form label{display:block; font-size:.88rem; font-weight:700; margin-bottom:6px;}
+  .form input{width:100%; padding:13px; border-radius:12px; border:2px solid var(--ink); background:var(--white);
+    font:500 16px 'DM Sans',sans-serif; color:var(--ink);}
+  .form input:focus{outline:none; box-shadow:0 0 0 3px var(--sky);}
+  .err{color:#B3261E; font-size:.85rem; min-height:1.1em; margin-top:6px;}
+  .stats{display:flex; gap:10px; margin-top:20px;}
+  .stat{flex:1; border:2px solid var(--ink); border-radius:14px; padding:14px 8px; text-align:center; background:var(--white);}
+  .stat .n{font-family:'Fraunces',serif; font-style:italic; font-size:1.9rem;}
+  .stat .l{font-size:.75rem; color:var(--ink-soft); margin-top:2px;}
+  .bigsq{margin-top:18px; border:2px solid var(--ink); border-radius:18px; background:var(--grass); padding:16px; text-align:center;}
+  .bigsq .n{font-family:'Fraunces',serif; font-style:italic; font-size:2.6rem; line-height:1;}
+  .bigsq .l{font-size:.9rem; margin-top:4px;}
+  .note{font-size:.85rem; color:var(--ink-soft); text-align:center; min-height:1em; margin-top:8px;}
+  .hidden{display:none !important;}
 </style>
 </head>
 <body>
 
 <div class="app">
   <div class="topbar">
-    <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 1 0 9 9" stroke="#FF7A5C" stroke-width="2.4" stroke-linecap="round"/><path d="M12 3l3 2.4M12 3L9.6 5.8" stroke="#FF7A5C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Loop
-    </div>
-    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-    <div class="progress-count mono" id="progressCount">0/0</div>
+    <div class="logo">Loop</div>
+    <div class="bar" role="progressbar" aria-label="Progress"><div class="bar-fill" id="barFill"></div></div>
   </div>
-
   <div class="stage" id="stage"></div>
-
-  <div class="actions" id="actionsBar">
-    <button class="action-btn no" id="btnNo" aria-label="Don't have it">
-      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
-    </button>
-    <button class="action-btn yes" id="btnYes" aria-label="I have it">
-      <svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
-    </button>
-  </div>
-  <div class="footer-row" id="footerRow">
-    <p class="hint">✕ don't have it · ✓ have it</p>
-    <button class="done-early hidden" id="doneEarly">That's all I've got →</button>
+  <div class="actions off" id="actions">
+    <button class="btn" id="btnNo">Nope</button>
+    <button class="btn coral" id="btnYes">Got one</button>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <!-- INTRO -->
-<div class="overlay" id="introOverlay">
-  <div class="overlay-card">
-    <span class="eyebrow">60 seconds, no typing</span>
-    <h1>Got baby gear cluttering up your place?</h1>
-    <p>
-      Buy it, use it for three months, baby outgrows it, and now it lives in your hallway.
-      Tossing it feels wasteful. Marketplace means haggling and no-shows.
-      <br><br>
-      We're building a better loop. Swipe right on anything you have, left if you don't.
-      That's how we find out what's actually out there.
-    </p>
-    <button class="cta" id="startBtn">Let's go →</button>
-    <p class="subnote">No account, no commitment. Just tap through.</p>
+<div class="overlay" id="introOv">
+  <div class="sheet">
+    <span class="kicker">About a minute</span>
+    <h1>Got baby gear taking up space?</h1>
+    <p>You buy it, use it for a few months, and then it lives in your hallway. We're building a way to pass it to the next family nearby, and to get the next thing you need the same way.</p>
+    <p>Tap through a few kinds of baby gear and tell us what you have.</p>
+    <button class="btn coral" id="startBtn">Let's go</button>
   </div>
 </div>
 
-<!-- CONTACT GATE (after a few swipes) -->
-<div class="overlay hidden" id="gateOverlay">
-  <div class="overlay-card gate-card">
-    <span class="eyebrow">Quick one</span>
-    <h1>Nice. Who are we matching?</h1>
-    <p style="margin-top:6px;">So we can actually match your stuff with a family who needs it next.</p>
-    <form class="gate-form" id="gateForm">
+<!-- EMAIL (after card 3) -->
+<div class="overlay hidden" id="emailOv">
+  <div class="sheet">
+    <span class="kicker">Quick one</span>
+    <h1>Where should we reach you?</h1>
+    <p>So we can tell you when a family nearby needs your stuff. No spam, no list.</p>
+    <form class="form" id="emailForm" novalidate>
       <div>
-        <label for="gName">First name</label>
-        <input type="text" id="gName" required autocomplete="given-name" placeholder="Your name">
+        <label for="fEmail">Email</label>
+        <input type="email" id="fEmail" autocomplete="email" placeholder="you@example.com">
+        <div class="err" id="emailErr"></div>
       </div>
-      <div>
-        <label for="gBaby">Baby's birthday or due date</label>
-        <input type="date" id="gBaby" required>
-      </div>
-      <div>
-        <label for="gZip">Neighborhood or ZIP <span class="opt">(optional)</span></label>
-        <input type="text" id="gZip" placeholder="e.g. Park Slope or 11215">
-      </div>
-      <div>
-        <label for="gEmail">Email <span class="opt">(optional, if you want first dibs)</span></label>
-        <input type="email" id="gEmail" autocomplete="email" placeholder="you@example.com">
-      </div>
-      <button type="submit" class="cta" style="margin-top:4px;">Keep swiping →</button>
+      <button type="submit" class="btn coral">Keep going</button>
     </form>
   </div>
 </div>
 
-<!-- TWO OPEN QUESTIONS (end of deck) -->
-<div class="overlay hidden" id="askOverlay">
-  <div class="overlay-card ask-card">
-    <span class="eyebrow">Last bit, optional</span>
-    <h1>In your own words</h1>
-    <form class="gate-form" id="askForm">
-      <div>
-        <label for="aDitch">What baby thing are you dying to get out of your apartment?</label>
-        <textarea id="aDitch" placeholder="Anything, even if it wasn't in the deck"></textarea>
-      </div>
-      <div>
-        <label for="aBorrow">What did you buy that you wish you'd just borrowed?</label>
-        <textarea id="aBorrow" placeholder="And why"></textarea>
-      </div>
-      <button type="submit" class="cta" id="askSubmit" style="margin-top:4px;">Send it →</button>
+<!-- DETAILS (after last card) -->
+<div class="overlay hidden" id="detailsOv">
+  <div class="sheet">
+    <span class="kicker">Last bit</span>
+    <h1>Who are we matching?</h1>
+    <p>Your baby's age tells us what you'll need next. Your neighborhood tells us who's close.</p>
+    <form class="form" id="detailsForm" novalidate>
+      <div><label for="fName">First name</label><input type="text" id="fName" autocomplete="given-name" placeholder="Jamie"></div>
+      <div><label for="fBaby">Baby's birthday or due date</label><input type="date" id="fBaby"></div>
+      <div><label for="fHood">Neighborhood</label><input type="text" id="fHood" placeholder="Park Slope"></div>
+      <div class="err" id="detailsErr"></div>
+      <button type="submit" class="btn coral" id="detailsBtn">Finish</button>
     </form>
-    <button class="text-btn" id="askSkip">Skip</button>
   </div>
 </div>
 
 <!-- FINISH -->
-<div class="overlay hidden" id="finishOverlay">
-  <div class="overlay-card finish-card">
-    <div class="big-emoji">🎉</div>
-    <h1>That's a wrap.</h1>
-    <p>Thank you. We'll follow up personally when we've got a match for your stuff.</p>
-    <div class="finish-stats">
-      <div class="finish-stat"><div class="num" id="statHave">0</div><div class="lbl mono">HAVE IT</div></div>
-      <div class="finish-stat"><div class="num" id="statDitch">0</div><div class="lbl mono">READY TO DITCH</div></div>
+<div class="overlay hidden" id="finishOv">
+  <div class="sheet">
+    <span class="kicker">Done</span>
+    <h1>Thank you.</h1>
+    <div class="bigsq"><div class="n" id="sqNum">0</div><div class="l">sq ft you could get back</div></div>
+    <div class="stats">
+      <div class="stat"><div class="n" id="statHave">0</div><div class="l">you have</div></div>
+      <div class="stat"><div class="n" id="statSpace">0</div><div class="l">ready to go</div></div>
+      <div class="stat"><div class="n" id="statSave">0</div><div class="l">saving for #2</div></div>
     </div>
-    <button class="share-btn" id="shareBtn">Send this to a parent friend</button>
-    <div class="share-note" id="shareNote"></div>
+    <p>We'll email you when a family near you needs something you have.</p>
+    <button class="btn sun" id="shareBtn">Send this to a parent friend</button>
+    <div class="note" id="shareNote"></div>
   </div>
 </div>
 
 <script>
   // ============ CONFIG ============
-  // Filled in automatically by the build from the LOOP_SHEET_URL setting.
-  const SHEET_URL = '__SHEET_URL__';
-  const GATE_AFTER = 6;        // ask name + baby date after this many cards
-  const DONE_EARLY_AFTER = 15; // show "That's all I've got" after this many cards
-  // Tip: send each friend a link ending in ?from=theirname so you know who passed it on.
-
-  // ============ CATALOG ============
-  const ICONS = {
-    seat: '<circle cx="12" cy="7" r="3"/><path d="M7 21v-6a5 5 0 0 1 10 0v6"/><path d="M7 21h10"/>',
-    mat: '<rect x="3" y="8" width="18" height="10" rx="3"/><path d="M3 12h18"/>',
-    mobility: '<circle cx="7" cy="18" r="2.4"/><circle cx="17" cy="18" r="2.4"/><path d="M7 18h10M12 4v10M8 8h8"/>',
-    sleep: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 11h16M9 6v5M15 6v5"/>',
-    bath: '<path d="M12 3c2 2 3 4 3 6a3 3 0 1 1-6 0c0-2 1-4 3-6z"/><path d="M5 15h14a2 2 0 0 1-2 4H7a2 2 0 0 1-2-4z"/>',
-    sound: '<path d="M5 12a7 7 0 0 1 14 0"/><path d="M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1.2"/>'
-  };
-  function iconSvg(key){ return `<svg viewBox="0 0 24 24">${ICONS[key] || ICONS.seat}</svg>`; }
-
-  const ITEMS = /*__ITEMS__*/[];
+  const SHEET_URL = '__SHEET_URL__';   // filled in by the build
+  const EMAIL_AFTER = 3;               // email screen after this many cards
+  const CATS = /*__CATS__*/[];
 
   // ============ STATE ============
-  // Fisher–Yates shuffle (sort-by-random is biased)
-  const deck = [...ITEMS];
-  for(let i = deck.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
-
   const ref = new URLSearchParams(location.search).get('from') || '';
+  const session = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const startedAt = Date.now();
-  let index = 0;
-  let gatePassed = false;
-  let busy = false;          // true while a card is animating or the sub-prompt is up
-  let submitted = false;
-  const results = [];        // { id, name, category, have, subStatus: 'using'|'ditching'|null }
-  const contact = { name:'', email:'', zip:'', baby_date:'' };
-  const words = { ditch:'', borrow:'' };
-
+  let index = 0, busy = false, finished = false;
+  const answers = [];                  // {category, have, version, status, sqft}
+  const contact = { email:'', name:'', baby_birthdate:'', neighborhood:'' };
   const $ = id => document.getElementById(id);
   const stage = $('stage');
 
-  function updateProgress(){
-    const pct = Math.min(100, Math.round((index / deck.length) * 100));
-    $('progressFill').style.width = pct + '%';
-    $('progressCount').textContent = `${index}/${deck.length}`;
-    $('doneEarly').classList.toggle('hidden', index < DONE_EARLY_AFTER);
-  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function progress(){ $('barFill').style.width = Math.round(index / Math.max(1, CATS.length) * 100) + '%'; }
+  function actions(on){ $('actions').classList.toggle('off', !on); }
+  function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1300); }
 
-  function setControls(on){ $('actionsBar').classList.toggle('disabled', !on); }
+  const TWO_WORD = ['skip hop','baby einstein','baby brezza',"dr. brown's",'radio flyer','tiny land','fisher-price'];
+  function brand(n){ const w = n.split(' '); const two = w.slice(0, 2).join(' '); return TWO_WORD.includes(two.toLowerCase()) ? two : w[0]; }
 
+  // ============ CARD ============
   function renderCard(){
-    stage.innerHTML = '';
-    busy = false;
-    setControls(true);
-    if(index >= deck.length){ endDeck(); return; }
-
-    const item = deck[index];
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.id = 'currentCard';
-    card.innerHTML = `
-      <div class="stamp yes">Yep!</div>
-      <div class="stamp no">Nope</div>
-      <div class="media"></div>
-      <div class="info">
-        <div class="cat"></div>
-        <h2></h2>
-        <div class="blurb"></div>
-        <div class="price">${item.price ? '~$' + item.price + ' new' : ''}</div>
+    busy = false; progress();
+    const c = CATS[index];
+    const eg = c.heroes.slice(0, 3).map(h => brand(h.name)).filter((v, i, a) => a.indexOf(v) === i).join(', ');
+    stage.innerHTML = `
+      <div class="card" id="card">
+        <div class="stamp yes">Got one</div><div class="stamp no">Nope</div>
+        <div class="arch" style="background:${esc(c.color)}"><i class="ti ${esc(c.icon)}" aria-hidden="true"></i></div>
+        <h1>${esc(c.name)}</h1>
+        <div class="eg">${eg ? 'Like ' + esc(eg) + '…' : ''}</div>
       </div>`;
-    card.querySelector('.cat').textContent = item.category;
-    card.querySelector('h2').textContent = item.name;
-    const blurb = card.querySelector('.blurb');
-    if(item.blurb) blurb.textContent = item.blurb; else blurb.remove();
-    stage.appendChild(card);
-
-    const mediaSlot = card.querySelector('.media');
-    const showIcon = () => {
-      mediaSlot.innerHTML = '';
-      const wrap = document.createElement('div');
-      wrap.className = 'icon-wrap';
-      wrap.innerHTML = iconSvg(item.icon);
-      mediaSlot.appendChild(wrap);
-    };
-    if(item.photo){
-      const img = document.createElement('img');
-      img.alt = item.name;
-      img.draggable = false;
-      img.referrerPolicy = 'no-referrer';
-      img.onerror = showIcon;
-      img.src = item.photo;
-      mediaSlot.appendChild(img);
-    } else { showIcon(); }
-
-    attachDrag(card, item);
-    updateProgress();
-    preload(index + 1);
+    actions(true);
+    drag($('card'));
+    const next = CATS[index + 1];
+    if(next) next.heroes.forEach(h => { if(h.photo){ const im = new Image(); im.src = h.photo; } });
+    CATS[index].heroes.forEach(h => { if(h.photo){ const im = new Image(); im.src = h.photo; } });
   }
 
-  function preload(i){
-    const next = deck[i];
-    if(next && next.photo){ const im = new Image(); im.referrerPolicy = 'no-referrer'; im.src = next.photo; }
-  }
-
-  // Pointer events on the card only: no window listeners piling up card after card.
-  function attachDrag(card, item){
+  function drag(card){
     const yes = card.querySelector('.stamp.yes'), no = card.querySelector('.stamp.no');
-    let startX = 0, startY = 0, dx = 0, dragging = false;
-
-    card.addEventListener('pointerdown', e => {
-      if(busy) return;
-      dragging = true; dx = 0;
-      startX = e.clientX; startY = e.clientY;
-      card.setPointerCapture(e.pointerId);
-      card.style.transition = 'none';
-    });
+    let x0 = 0, y0 = 0, dx = 0, on = false;
+    card.addEventListener('pointerdown', e => { if(busy) return; on = true; dx = 0; x0 = e.clientX; y0 = e.clientY; card.setPointerCapture(e.pointerId); card.style.transition = 'none'; });
     card.addEventListener('pointermove', e => {
-      if(!dragging) return;
-      dx = e.clientX - startX;
-      const dy = (e.clientY - startY) * 0.4;
-      card.style.transform = `translate(${dx}px, ${dy}px) rotate(${dx / 18}deg)`;
-      yes.style.opacity = dx > 0 ? Math.min(1, dx / 100) : 0;
-      no.style.opacity  = dx < 0 ? Math.min(1, -dx / 100) : 0;
+      if(!on) return; dx = e.clientX - x0; const dy = (e.clientY - y0) * 0.3;
+      card.style.transform = `translate(${dx}px,${dy}px) rotate(${dx / 20}deg)`;
+      yes.style.opacity = dx > 0 ? Math.min(1, dx / 90) : 0; no.style.opacity = dx < 0 ? Math.min(1, -dx / 90) : 0;
     });
     const end = () => {
-      if(!dragging) return;
-      dragging = false;
-      card.style.transition = 'transform 0.3s ease';
-      if(dx > 90) commitSwipe(true, item);
-      else if(dx < -90) commitSwipe(false, item);
+      if(!on) return; on = false; card.style.transition = 'transform .25s ease';
+      if(dx > 90) choose(true); else if(dx < -90) choose(false);
       else { card.style.transform = ''; yes.style.opacity = 0; no.style.opacity = 0; }
     };
-    card.addEventListener('pointerup', end);
-    card.addEventListener('pointercancel', end);
+    card.addEventListener('pointerup', end); card.addEventListener('pointercancel', end);
   }
 
   function flyOut(dir, cb){
-    const card = $('currentCard');
-    if(!card){ cb(); return; }
-    const stamp = card.querySelector(dir > 0 ? '.stamp.yes' : '.stamp.no');
-    if(stamp) stamp.style.opacity = 1;
-    card.style.transition = 'transform 0.35s ease, opacity 0.35s ease';
-    card.style.transform = `translate(${dir * 600}px, -40px) rotate(${dir * 20}deg)`;
-    card.style.opacity = '0';
-    setTimeout(cb, 300);
+    const card = $('card'); if(!card){ cb(); return; }
+    card.querySelector(dir > 0 ? '.stamp.yes' : '.stamp.no').style.opacity = 1;
+    card.style.transition = 'transform .3s ease, opacity .3s ease';
+    card.style.transform = `translate(${dir * 560}px,-30px) rotate(${dir * 18}deg)`; card.style.opacity = 0;
+    setTimeout(cb, 260);
   }
 
-  function commitSwipe(haveIt, item){
-    if(busy) return;
-    busy = true;
-    setControls(false);
-    flyOut(haveIt ? 1 : -1, () => {
-      if(haveIt){ showSubPrompt(item); }
-      else { record(item, false, null); advance(); }
-    });
+  function choose(have){
+    if(busy || index >= CATS.length) return; busy = true; actions(false);
+    flyOut(have ? 1 : -1, () => have ? whichOne() : answer({ have:false }));
   }
 
-  function record(item, have, subStatus){
-    results.push({ id:item.id, name:item.name, category:item.category, have, subStatus });
-  }
-
-  function showSubPrompt(item){
-    stage.innerHTML = '';
-    const wrap = document.createElement('div');
-    wrap.className = 'card';
-    wrap.innerHTML = `
-      <div class="sub-prompt">
-        <div class="emoji">🙌</div>
-        <h3></h3>
-        <div class="sub-prompt-btns">
-          <button class="sub-btn" data-choice="ditching">Ready to pass it on</button>
-          <button class="sub-btn" data-choice="using">Still using it</button>
+  // ============ WHICH ONE ============
+  function whichOne(){
+    const c = CATS[index];
+    const tiles = c.heroes.map((h, i) => `
+      <button class="tile" data-v="${i}">
+        ${h.photo ? `<div class="ph"><img src="${esc(h.photo)}" alt=""></div>` : `<div class="ph name" style="background:${esc(c.color)}">${esc(h.name)}</div>`}
+        <div class="tl">${esc(h.name)}</div>
+      </button>`).join('');
+    stage.innerHTML = `
+      <div class="panel">
+        <div class="kicker">${esc(c.name)}</div>
+        <h1>Which one?</h1>
+        <div class="grid">${tiles}
+          <button class="tile other" data-v="other"><div class="ph"><i class="ti ti-dots" aria-hidden="true"></i></div><div class="tl">Something else</div></button>
         </div>
-        <button class="sub-back">Oops, I don't have this one</button>
+        <button class="link" id="backNo">Actually, I don't have one</button>
       </div>`;
-    wrap.querySelector('h3').textContent = `Still using the ${item.category.toLowerCase()}?`;
-    stage.appendChild(wrap);
-
-    wrap.querySelectorAll('.sub-btn').forEach(btn => btn.addEventListener('click', () => {
-      record(item, true, btn.dataset.choice); advance();
+    stage.querySelectorAll('.tile img').forEach(img => img.addEventListener('error', () => {
+      const ph = img.parentElement, name = img.closest('.tile').querySelector('.tl').textContent;
+      ph.className = 'ph name'; ph.style.background = c.color; ph.textContent = name;
+    }));
+    stage.querySelectorAll('.tile').forEach(t => t.addEventListener('click', () => {
+      const v = t.dataset.v; status(v === 'other' ? 'Something else' : c.heroes[+v].name);
     }, { once:true }));
-    wrap.querySelector('.sub-back').addEventListener('click', () => {
-      record(item, false, null); advance();
-    }, { once:true });
+    $('backNo').addEventListener('click', () => answer({ have:false }), { once:true });
   }
 
-  function advance(){
-    index++;
-    if(!gatePassed && index === GATE_AFTER && index < deck.length){
-      updateProgress();
-      stage.innerHTML = '';
-      $('gateOverlay').classList.remove('hidden');
-      setTimeout(() => $('gName').focus(), 50);
-    } else {
-      renderCard();
-    }
+  // ============ STATUS CHECK ============
+  function status(version){
+    const c = CATS[index];
+    stage.innerHTML = `
+      <div class="panel">
+        <div class="kicker">${esc(version)}</div>
+        <h1>Status check</h1>
+        <button class="btn opt" data-s="using"><b>Still using it</b><span>In daily rotation</span></button>
+        <button class="btn opt coral" data-s="space"><b>Taking up space</b><span>Done with it, ready for it to go</span></button>
+        <button class="btn opt sky" data-s="saving"><b>Saving it for baby #2</b><span>Not using it, but want it again</span></button>
+      </div>`;
+    stage.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
+      const s = b.dataset.s;
+      if(s === 'space' && c.sqft) toast(`+${Math.round(c.sqft)} sq ft back`);
+      answer({ have:true, version, status:s });
+    }, { once:true }));
   }
 
-  // ---------- buttons + keyboard ----------
-  $('btnYes').addEventListener('click', () => { if(index < deck.length) commitSwipe(true, deck[index]); });
-  $('btnNo').addEventListener('click',  () => { if(index < deck.length) commitSwipe(false, deck[index]); });
+  // ============ FLOW ============
+  function answer(a){
+    const c = CATS[index];
+    answers.push({ category:c.name, have:a.have, version:a.version || '', status:a.status || '', sqft:c.sqft || 0 });
+    index++; progress();
+    if(contact.email) save(false);
+    if(index === EMAIL_AFTER && !contact.email && index < CATS.length){ stage.innerHTML = ''; show('emailOv'); setTimeout(() => $('fEmail').focus(), 60); }
+    else if(index >= CATS.length){ stage.innerHTML = ''; actions(false); show('detailsOv'); }
+    else renderCard();
+  }
+
+  function show(id){ document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden')); if(id) $(id).classList.remove('hidden'); }
+
+  $('btnYes').addEventListener('click', () => choose(true));
+  $('btnNo').addEventListener('click', () => choose(false));
   document.addEventListener('keydown', e => {
-    if(document.querySelector('.overlay:not(.hidden)') || busy || index >= deck.length) return;
-    if(e.key === 'ArrowRight') commitSwipe(true, deck[index]);
-    if(e.key === 'ArrowLeft')  commitSwipe(false, deck[index]);
+    if(!$('card') || busy || document.querySelector('.overlay:not(.hidden)')) return;
+    if(e.key === 'ArrowRight') choose(true); if(e.key === 'ArrowLeft') choose(false);
   });
-  $('doneEarly').addEventListener('click', () => { if(!busy) endDeck(); });
+  $('startBtn').addEventListener('click', () => { show(null); if(CATS.length) renderCard(); });
 
-  // ---------- intro ----------
-  $('startBtn').addEventListener('click', () => {
-    $('introOverlay').classList.add('hidden');
-    renderCard();
-  });
-
-  // ---------- gate ----------
-  $('gateForm').addEventListener('submit', e => {
+  $('emailForm').addEventListener('submit', e => {
     e.preventDefault();
-    contact.name = $('gName').value.trim();
-    contact.baby_date = $('gBaby').value;
-    contact.zip = $('gZip').value.trim();
-    contact.email = $('gEmail').value.trim();
-    gatePassed = true;
-    $('gateOverlay').classList.add('hidden');
-    renderCard();
+    const v = $('fEmail').value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ $('emailErr').textContent = 'Enter an email so we can reach you.'; return; }
+    contact.email = v; save(false); show(null); renderCard();
   });
+  $('fEmail').addEventListener('input', () => $('emailErr').textContent = '');
 
-  // ---------- end of deck: two open questions ----------
-  function endDeck(){
-    busy = true;
-    stage.innerHTML = '';
-    $('actionsBar').classList.add('hidden');
-    $('footerRow').classList.add('hidden');
-    updateProgress();
-    $('askOverlay').classList.remove('hidden');
-  }
-
-  $('askForm').addEventListener('submit', async e => {
+  $('detailsForm').addEventListener('submit', async e => {
     e.preventDefault();
-    words.ditch = $('aDitch').value.trim();
-    words.borrow = $('aBorrow').value.trim();
-    $('askSubmit').disabled = true;
-    $('askSubmit').textContent = 'Sending…';
-    await submitResults();
-    showFinish();
+    const name = $('fName').value.trim(), baby = $('fBaby').value, hood = $('fHood').value.trim();
+    if(!name || !baby || !hood){ $('detailsErr').textContent = 'Fill in all three so we can match you.'; return; }
+    Object.assign(contact, { name, baby_birthdate:baby, neighborhood:hood });
+    $('detailsBtn').disabled = true; $('detailsBtn').textContent = 'Saving…';
+    finished = true; await save(true);
+    const space = answers.filter(a => a.status === 'space');
+    $('sqNum').textContent = Math.round(space.reduce((s, a) => s + a.sqft, 0));
+    $('statHave').textContent = answers.filter(a => a.have).length;
+    $('statSpace').textContent = space.length;
+    $('statSave').textContent = answers.filter(a => a.status === 'saving').length;
+    show('finishOv');
   });
-  $('askSkip').addEventListener('click', async () => { await submitResults(); showFinish(); });
+  ['fName','fBaby','fHood'].forEach(id => $(id).addEventListener('input', () => $('detailsErr').textContent = ''));
 
-  function showFinish(){
-    $('askOverlay').classList.add('hidden');
-    $('statHave').textContent = results.filter(r => r.have).length;
-    $('statDitch').textContent = results.filter(r => r.subStatus === 'ditching').length;
-    $('finishOverlay').classList.remove('hidden');
-  }
-
-  // ---------- share ----------
   $('shareBtn').addEventListener('click', async () => {
     const url = new URL(location.href);
     url.search = contact.name ? '?from=' + encodeURIComponent(contact.name.toLowerCase()) : '';
-    const data = { title:'Loop', text:'Takes a minute: swipe through baby gear you have lying around.', url:url.toString() };
+    const data = { title:'Loop', text:'Takes a minute: tell us what baby gear is taking up space at your place.', url:url.toString() };
     try{
-      if(navigator.share){ await navigator.share(data); }
+      if(navigator.share) await navigator.share(data);
       else { await navigator.clipboard.writeText(data.url); $('shareNote').textContent = 'Link copied.'; }
-    }catch(_){ /* viewer cancelled */ }
+    }catch(_){}
   });
 
-  // ---------- submit (to the Google Sheet) ----------
-  const session = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-
-  function buildPayload(partial){
+  // ============ SAVE (to the Google Sheet) ============
+  function payload(done){
+    const count = s => answers.filter(a => a.status === s).length;
     return JSON.stringify({
-      session,
-      name: contact.name || '(not given)',
-      email: contact.email,
-      neighborhood: contact.zip,
-      baby_birthdate: contact.baby_date,
-      dying_to_get_rid_of: words.ditch,
-      wish_borrowed: words.borrow,
-      ready_to_ditch: results.filter(r => r.subStatus === 'ditching').map(r => r.name).join('; '),
-      still_using: results.filter(r => r.subStatus === 'using').map(r => r.name).join('; '),
-      have_count: results.filter(r => r.have).length,
-      cards_seen: results.length + ' of ' + deck.length,
-      seconds: Math.round((Date.now() - startedAt) / 1000),
-      referred_by: ref,
-      status: partial ? 'dropped off' : 'finished',
-      swipes: results
+      session, email:contact.email, name:contact.name, baby_birthdate:contact.baby_birthdate, neighborhood:contact.neighborhood,
+      cards_seen: answers.length + ' of ' + CATS.length,
+      have_count: answers.filter(a => a.have).length, space_count:count('space'), saving_count:count('saving'),
+      sqft_freed: Math.round(answers.filter(a => a.status === 'space').reduce((s, a) => s + a.sqft, 0)),
+      seconds: Math.round((Date.now() - startedAt) / 1000), referred_by:ref,
+      status: done ? 'finished' : 'dropped off',
+      swipes: answers.map(({ category, have, version, status }) => ({ category, have, version, status }))
     });
   }
-
-  // text/plain + no-cors is what Google Apps Script accepts from a browser without a CORS preflight.
-  async function submitResults(){
-    if(submitted || !SHEET_URL.startsWith('https://')) return;
-    submitted = true;
-    try{
-      await fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body:buildPayload(false) });
-    }catch(err){ console.warn('Submission failed:', err); }
+  // Posts go one at a time so a slow early save can't overwrite a later one.
+  let queue = Promise.resolve();
+  function save(done){
+    if(!SHEET_URL.startsWith('https://')) return Promise.resolve();
+    const body = payload(done);
+    queue = queue.then(() => fetch(SHEET_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'text/plain;charset=utf-8' }, body })
+      .catch(err => console.warn('Save failed:', err)));
+    return queue;
   }
-
-  // If someone leaves mid-way (after giving their name), save what we have.
-  // Same session id, so the Sheet keeps one row per person and updates it if they come back.
   document.addEventListener('visibilitychange', () => {
-    if(document.visibilityState === 'hidden' && !submitted && gatePassed && results.length && navigator.sendBeacon){
-      navigator.sendBeacon(SHEET_URL, new Blob([buildPayload(true)], { type:'text/plain;charset=utf-8' }));
+    if(document.visibilityState === 'hidden' && !finished && contact.email && answers.length && navigator.sendBeacon && SHEET_URL.startsWith('https://')){
+      navigator.sendBeacon(SHEET_URL, new Blob([payload(false)], { type:'text/plain;charset=utf-8' }));
     }
   });
 </script>
-
 </body>
 </html>
