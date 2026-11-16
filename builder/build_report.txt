@@ -1,14 +1,12 @@
 row 1 (Ingenuity Keep Cozy 3-in-1 Bouncer & Rocker): couldn't read page: page not found (404)
 row 1 (Ingenuity Keep Cozy 3-in-1 Bouncer & Rocker): no photo found, card will show an icon
-row 4 (Bright Starts Learn-to-Sit Floor Seat): couldn't read page: page not found (404)
-row 4 (Bright Starts Learn-to-Sit Floor Seat): no photo found, card will show an icon
-row 13 (Baby Einstein Around We Grow 4-in-1 Discovery Center): couldn't read page: page not found (404)
-row 13 (Baby Einstein Around We Grow 4-in-1 Discovery Center): no photo found, card will show an icon
-row 16 (Fisher-Price Power Wheels Jeep Wrangler): couldn't read page: page not found (404)
-row 16 (Fisher-Price Power Wheels Jeep Wrangler): no photo found, card will show an icon
-row 24 (Fisher-Price Think & Learn Smart Cycle): couldn't read page: timed out
-row 24 (Fisher-Price Think & Learn Smart Cycle): no photo found, card will show an icon
-row 25 (Summer Infant My Bath Seat): couldn't read page: page not found (404)
-row 25 (Summer Infant My Bath Seat): no photo found, card will show an icon
-row 29 (Bumbo Floor Seat): no photo found, card will show an icon
-row 42 (Skip Hop Baby Bath Tub 4-in-1 Grow with Baby Infant to Toddler Bathtub with Supportive Sling and Sit-Up Support Wave Age 0m+): no price found (card just won't show one)
+row 3 (Bright Starts Learn-to-Sit Floor Seat): couldn't read page: page not found (404)
+row 3 (Bright Starts Learn-to-Sit Floor Seat): no photo found, card will show an icon
+row 13 (Fisher-Price Power Wheels Jeep Wrangler): couldn't read page: page not found (404)
+row 13 (Fisher-Price Power Wheels Jeep Wrangler): no photo found, card will show an icon
+row 16 (Graco DuetSoothe Swing and Rocker): couldn't read page: site blocked the request (403)
+row 17 (Graco Simple Sway Baby Swing): couldn't read page: site blocked the request (403)
+row 21 (Fisher-Price Think & Learn Smart Cycle): couldn't read page: timed out
+row 21 (Fisher-Price Think & Learn Smart Cycle): no photo found, card will show an icon
+row 25 (Bumbo Floor Seat): no photo found, card will show an icon
+row 37 (Skip Hop Baby Bath Tub 4-in-1 Grow with Baby Infant to Toddler Bathtub with Supportive Sling and Sit-Up Support Wave Age 0m+): no price found (card just won't show one)
