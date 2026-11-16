@@ -49,8 +49,10 @@
   .card{position:absolute; inset:14px 20px 0; display:flex; flex-direction:column; justify-content:center; touch-action:none; user-select:none;
     -webkit-user-select:none; will-change:transform; cursor:grab;}
   .arch{flex:0 1 auto; height:min(52dvh, 340px); min-height:180px; border-radius:999px 999px 22px 22px; border:2px solid var(--ink); display:flex;
-    align-items:flex-end; justify-content:center; padding-bottom:12%; font-size:min(30vw,128px); position:relative;}
+    align-items:center; justify-content:center; padding:12% 6% 4%; font-size:min(30vw,128px); position:relative;}
   .arch i{line-height:1;}
+  .arch{overflow:hidden;}
+  .arch img{width:74%; max-width:250px; aspect-ratio:1/1; object-fit:contain; background:#fff; border:2px solid var(--ink); border-radius:22px; padding:5%; pointer-events:none; -webkit-user-drag:none;}
   .card h1{font-size:2.1rem; margin:18px 0 6px;}
   .card .eg{color:var(--ink-soft); font-size:.95rem; min-height:1.3em;}
   .stamp{position:absolute; top:22%; padding:6px 14px; border:3px solid var(--ink); border-radius:12px; background:var(--paper);
@@ -214,11 +216,12 @@
   function renderCard(){
     busy = false; progress();
     const c = CATS[index];
+    const hero = c.heroes.find(h => h.photo);
     const eg = c.heroes.slice(0, 3).map(h => brand(h.name)).filter((v, i, a) => a.indexOf(v) === i).join(', ');
     stage.innerHTML = `
       <div class="card" id="card">
         <div class="stamp yes">Got one</div><div class="stamp no">Nope</div>
-        <div class="arch" style="background:${esc(c.color)}"><i class="ti ${esc(c.icon)}" aria-hidden="true"></i></div>
+        <div class="arch" style="background:${esc(c.color)}">${hero ? `<img src="${esc(hero.photo)}" alt="">` : `<i class="ti ${esc(c.icon)}" aria-hidden="true"></i>`}</div>
         <h1>${esc(c.name)}</h1>
         <div class="eg">${eg ? 'Like ' + esc(eg) + '…' : ''}</div>
       </div>`;
