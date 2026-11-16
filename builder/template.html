@@ -62,6 +62,7 @@
   .actions{display:flex; gap:12px; padding:16px 20px max(18px, env(safe-area-inset-bottom));}
   .actions .btn{flex:1;}
   .actions.off{visibility:hidden;}
+  #doneEarly{margin:-6px auto max(10px, env(safe-area-inset-bottom)); display:block;}
 
   /* which one / status panels */
   .panel{position:absolute; inset:14px 20px 0; display:flex; flex-direction:column; overflow-y:auto; padding-bottom:12px;}
@@ -123,6 +124,7 @@
     <button class="btn" id="btnNo">Nope</button>
     <button class="btn coral" id="btnYes">Got one</button>
   </div>
+  <button class="link hidden" id="doneEarly">That's everything I've got</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -192,6 +194,7 @@
   // ============ CONFIG ============
   const SHEET_URL = '__SHEET_URL__';   // filled in by the build
   const EMAIL_AFTER = 3;               // email screen after this many cards
+  const DONE_EARLY_AFTER = 12;         // "That's everything I've got" from this card on (needs email)
   const CATS = /*__CATS__*/[];
 
   // ============ STATE ============
@@ -206,7 +209,10 @@
 
   function esc(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
   function progress(){ $('barFill').style.width = Math.round(index / Math.max(1, CATS.length) * 100) + '%'; }
-  function actions(on){ $('actions').classList.toggle('off', !on); }
+  function actions(on){
+    $('actions').classList.toggle('off', !on);
+    $('doneEarly').classList.toggle('hidden', !(on && contact.email && index >= DONE_EARLY_AFTER && index < CATS.length));
+  }
   function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1300); }
 
   const TWO_WORD = ['skip hop','baby einstein','baby brezza',"dr. brown's",'radio flyer','tiny land','fisher-price'];
@@ -326,6 +332,7 @@
     if(!$('card') || busy || document.querySelector('.overlay:not(.hidden)')) return;
     if(e.key === 'ArrowRight') choose(true); if(e.key === 'ArrowLeft') choose(false);
   });
+  $('doneEarly').addEventListener('click', () => { if(busy) return; busy = true; stage.innerHTML = ''; actions(false); show('detailsOv'); });
   $('startBtn').addEventListener('click', () => { show(null); if(CATS.length) renderCard(); });
 
   $('emailForm').addEventListener('submit', e => {
