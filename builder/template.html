@@ -248,7 +248,7 @@
   }
   function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1300); }
 
-  const TWO_WORD = ['skip hop','baby einstein','baby brezza',"dr. brown's",'radio flyer','tiny land','fisher-price'];
+  const TWO_WORD = ['skip hop','baby einstein','baby brezza',"dr. brown's",'radio flyer','tiny land','fisher-price','solly baby'];
   function brand(n){ const w = n.split(' '); const two = w.slice(0, 2).join(' '); return TWO_WORD.includes(two.toLowerCase()) ? two : w[0]; }
 
   // ============ CARD ============
@@ -389,7 +389,7 @@
     else renderCard();
   }
 
-  function show(id){ document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden')); if(id) $(id).classList.remove('hidden'); }
+  function show(id){ document.querySelectorAll('.overlay').forEach(o => o.classList.add('hidden')); if(id){ $(id).classList.remove('hidden'); $('toast').classList.remove('show'); } }
 
   $('btnYes').addEventListener('click', () => choose(true));
   $('btnNo').addEventListener('click', () => choose(false));
