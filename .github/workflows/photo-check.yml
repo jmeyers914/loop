@@ -1,6 +1,8 @@
 name: Photo check
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -9,6 +11,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install requests pillow
-      - run: python builder/tools/photo_check.py builder/tools/photo_candidates.txt sheet.jpg
-      - uses: actions/upload-artifact@v4
-        with: { name: sheet, path: sheet.jpg }
+      - run: python builder/tools/photo_check.py builder/tools/photo_candidates.txt /tmp/sheet.jpg
+      - name: Push sheet to photo-check branch
+        run: |
+          git config user.name "loop-bot"; git config user.email "loop-bot@users.noreply.github.com"
+          git checkout --orphan photo-check && git rm -rqf . && cp /tmp/sheet.jpg sheet.jpg
+          git add sheet.jpg && git commit -qm "Photo check sheet" && git push -f origin photo-check
