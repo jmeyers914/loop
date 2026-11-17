@@ -82,6 +82,16 @@
   .opt b{display:block; font-size:1.02rem;}
   .opt span{display:block; font-size:.85rem; font-weight:500; opacity:.85; margin-top:2px;}
 
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{border:2px solid var(--ink); border-radius:99px; background:var(--white); padding:8px 13px; font:700 .9rem 'DM Sans',sans-serif; cursor:pointer;}
+  .chip[aria-pressed="true"]{background:var(--coral); color:var(--paper);}
+  .chip.dash{border-style:dashed; background:var(--paper);}
+  .chip.dash[aria-pressed="true"]{background:var(--coral); color:var(--paper);}
+  .lbl{font-size:.88rem; font-weight:700; margin:18px 0 8px;}
+  .eye{margin-top:18px; border:2px dashed var(--ink); border-radius:16px; padding:14px; background:var(--white);}
+  .eye b{font-size:1.02rem;} .eye p{margin:4px 0 0; font-size:.88rem;}
+  .eye .btn{margin-top:12px;}
+
   /* toast */
   .toast{position:fixed; left:50%; top:52px; transform:translate(-50%, -12px); background:var(--grass); color:var(--ink);
     border:2px solid var(--ink); border-radius:99px; padding:8px 18px; font-weight:700; opacity:0; pointer-events:none;
@@ -173,6 +183,23 @@
   </div>
 </div>
 
+<!-- LOOKING FOR -->
+<div class="overlay hidden" id="eyeOv">
+  <div class="sheet">
+    <h1>Have your eye on anything? 👀</h1>
+    <p>Get it from a neighbor for less, and we'll take it off your hands when you're done.</p>
+    <div class="lbl">Baby gear</div>
+    <div class="chips" id="eyeGear"></div>
+    <div class="lbl">Toys</div>
+    <div class="chips" id="eyeToys"></div>
+    <div class="chips" style="margin-top:8px"><button class="chip dash" id="eyeOtherBtn" aria-pressed="false">+ Something else</button></div>
+    <div class="form hidden" id="eyeOtherWrap" style="margin-top:10px"><input type="text" id="eyeOther" maxlength="120" placeholder="Double stroller, toddler bike…"></div>
+    <div class="err" id="eyeErr"></div>
+    <button class="btn coral" id="eyeSave">Keep an eye out for me</button>
+    <button class="link" id="eyeSkip" style="display:block; margin:8px auto 0">Not right now</button>
+  </div>
+</div>
+
 <!-- FINISH -->
 <div class="overlay hidden" id="finishOv">
   <div class="sheet">
@@ -185,6 +212,11 @@
       <div class="stat"><div class="n" id="statSave">0</div><div class="l">saving for #2</div></div>
     </div>
     <p>We'll email you when a family near you needs something you have.</p>
+    <div class="eye" id="eyeBox">
+      <b>Have your eye on anything? 👀</b>
+      <p>Get it from a neighbor for less, and we'll take it off your hands when you're done.</p>
+      <button class="btn sky" id="eyeOpen">Pick what you're after</button>
+    </div>
     <button class="btn sun" id="shareBtn">Send this to a parent friend</button>
     <div class="note" id="shareNote"></div>
   </div>
@@ -222,14 +254,14 @@
   function renderCard(){
     busy = false; progress();
     const c = CATS[index];
-    const hero = c.heroes.find(h => h.photo);
+    const hero = c.card ? { photo:c.card } : c.heroes.find(h => h.photo);
     const eg = c.heroes.slice(0, 3).map(h => brand(h.name)).filter((v, i, a) => a.indexOf(v) === i).join(', ');
     stage.innerHTML = `
       <div class="card" id="card">
         <div class="stamp yes">Got one</div><div class="stamp no">Nope</div>
         <div class="arch" style="background:${esc(c.color)}">${hero ? `<img src="${esc(hero.photo)}" alt="">` : `<i class="ti ${esc(c.icon)}" aria-hidden="true"></i>`}</div>
         <h1>${esc(c.name)}</h1>
-        <div class="eg">${eg ? 'Like ' + esc(eg) + '…' : ''}</div>
+        <div class="eg">${c.options.length ? 'Any age, any brand' : eg ? 'Like ' + esc(eg) + '…' : ''}</div>
       </div>`;
     actions(true);
     drag($('card'));
@@ -265,7 +297,8 @@
 
   function choose(have){
     if(busy || index >= CATS.length) return; busy = true; actions(false);
-    flyOut(have ? 1 : -1, () => have ? whichOne() : answer({ have:false }));
+    const c = CATS[index];
+    flyOut(have ? 1 : -1, () => !have ? answer({ have:false }) : c.options.length ? pickAges() : c.heroes.length ? whichOne() : status(''));
   }
 
   // ============ WHICH ONE ============
@@ -295,12 +328,33 @@
     $('backNo').addEventListener('click', () => answer({ have:false }), { once:true });
   }
 
+  // ============ AGE PICKER (toys) ============
+  function pickAges(){
+    const c = CATS[index];
+    stage.innerHTML = `
+      <div class="panel">
+        <div class="kicker">${esc(c.name)}</div>
+        <h1>For what ages?</h1>
+        <div class="chips">${c.options.map(o => `<button class="chip" aria-pressed="false">${esc(o)}</button>`).join('')}</div>
+        <div class="err" id="ageErr"></div>
+        <button class="btn coral" id="ageNext" style="margin-top:14px">Next</button>
+        <button class="link" id="backNo">Actually, I don't have any</button>
+      </div>`;
+    stage.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('ageErr').textContent = ''; }));
+    $('ageNext').addEventListener('click', () => {
+      const picked = [...stage.querySelectorAll('.chip[aria-pressed="true"]')].map(b => b.textContent);
+      if(!picked.length){ $('ageErr').textContent = 'Pick at least one age.'; return; }
+      status(picked.join(', '));
+    });
+    $('backNo').addEventListener('click', () => answer({ have:false }), { once:true });
+  }
+
   // ============ STATUS CHECK ============
   function status(version){
     const c = CATS[index];
     stage.innerHTML = `
       <div class="panel">
-        <div class="kicker">${esc(version)}</div>
+        <div class="kicker">${esc(version || c.name)}</div>
         <h1>Status check</h1>
         <button class="btn opt" data-s="using"><b>Still using it</b><span>In daily rotation</span></button>
         <button class="btn opt coral" data-s="space"><b>Taking up space</b><span>Done with it, ready for it to go</span></button>
@@ -369,6 +423,36 @@
     }catch(_){}
   });
 
+  // ============ LOOKING FOR ============
+  const looking = [];                  // category names, plus "Other: …"
+  function chip(label){ const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('eyeErr').textContent = ''; }); return b; }
+  $('eyeOpen').addEventListener('click', () => {
+    const had = new Set(answers.filter(a => a.have).map(a => a.category));
+    const gear = CATS.filter(c => !c.intake_only && !c.options.length);
+    gear.sort((a, b) => had.has(a.name) - had.has(b.name));
+    $('eyeGear').replaceChildren(...gear.map(c => chip(c.name)));
+    const toys = CATS.find(c => c.options.length);
+    $('eyeToys').replaceChildren(...(toys ? toys.options.map(o => chip('Toys: ' + o)) : []));
+    show('eyeOv');
+  });
+  $('eyeOtherBtn').addEventListener('click', () => {
+    const on = $('eyeOtherBtn').getAttribute('aria-pressed') !== 'true';
+    $('eyeOtherBtn').setAttribute('aria-pressed', on); $('eyeOtherWrap').classList.toggle('hidden', !on); if(on) $('eyeOther').focus();
+  });
+  $('eyeSave').addEventListener('click', async () => {
+    const picks = [...document.querySelectorAll('#eyeGear .chip[aria-pressed="true"], #eyeToys .chip[aria-pressed="true"]')].map(b => b.textContent);
+    const other = $('eyeOther').value.trim();
+    if(other && $('eyeOtherBtn').getAttribute('aria-pressed') === 'true') picks.push('Other: ' + other);
+    if(!picks.length){ $('eyeErr').textContent = 'Pick at least one, or tap Not right now.'; return; }
+    looking.splice(0, looking.length, ...picks);
+    $('eyeSave').disabled = true; $('eyeSave').textContent = 'Saving…';
+    await save(true);
+    $('eyeBox').innerHTML = '<b>Got it.</b><p>We\'ll let you know when one comes up nearby.</p>';
+    show('finishOv');
+  });
+  $('eyeSkip').addEventListener('click', () => show('finishOv'));
+
   // ============ SAVE (to the Google Sheet) ============
   function payload(done){
     const count = s => answers.filter(a => a.status === s).length;
@@ -380,6 +464,7 @@
       seconds: Math.round((Date.now() - startedAt) / 1000), referred_by:ref,
       status: done ? 'finished' : 'dropped off',
       swipes: answers.map(({ category, have, version, status }) => ({ category, have, version, status }))
+        .concat(looking.map(l => ({ category:l, have:false, version:'', status:'looking' })))
     });
   }
   // Posts go one at a time so a slow early save can't overwrite a later one.

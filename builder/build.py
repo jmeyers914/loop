@@ -120,14 +120,28 @@ def main():
             if "photo" in hero:
                 used.add(f"{pid}.jpg")
             heroes.append(hero)
-        if not heroes:
-            problems.append(f"{name}: no hero versions, card only offers 'Something else'")
+        if not heroes and not row.get("options"):
+            problems.append(f"{name}: no hero versions or options, 'Got one' goes straight to status")
+        card = None
+        csrc = row.get("card_photo", "")
+        cid = "c" + hashlib.sha1(name.lower().encode()).hexdigest()[:8]
+        ckept = IMG_DIR / f"{cid}.jpg"
+        if csrc:
+            try:
+                card = save_image(csrc, cid)
+            except Exception as e:
+                if ckept.exists():
+                    card = f"img/{ckept.name}"
+                problems.append(f"{name}: card photo failed ({why(e)})")
+        if card:
+            used.add(f"{cid}.jpg")
+        options = [o.strip() for o in row.get("options", "").split("|") if o.strip()]
         color = row.get("color") if re.fullmatch(r"#[0-9a-fA-F]{6}", row.get("color", "")) else PALETTE[n % 4]
         cats.append({
             "id": slug(name), "name": name, "color": color,
             "icon": row.get("icon") or "ti-box", "sqft": num(row.get("sqft")),
             "intake_only": row.get("intake_only", "").lower() in ("yes", "y", "true", "1"),
-            "heroes": heroes,
+            "heroes": heroes, "options": options, "card": card,
         })
         print(f"  {name}: {sum('photo' in h for h in heroes)}/{len(heroes)} photos")
 
