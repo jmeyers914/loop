@@ -11,9 +11,11 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install requests pillow
-      - run: python builder/tools/photo_check.py builder/tools/photo_candidates.txt /tmp/sheet.jpg
+      - run: python builder/tools/photo_check.py builder/tools/photo_candidates.txt /tmp/sheet.jpg || true
+      - name: Build from categories.csv to preview collages
+        run: LOOP_OUT=/tmp/site python builder/build.py && mkdir -p /tmp/collages && cp /tmp/site/img/o*.jpg /tmp/site/img/c*.jpg /tmp/collages/ 2>/dev/null; cat builder/build_report.txt
       - name: Push sheet to photo-check branch
         run: |
           git config user.name "loop-bot"; git config user.email "loop-bot@users.noreply.github.com"
-          git checkout --orphan photo-check && git rm -rqf . && cp /tmp/sheet.jpg sheet.jpg
-          git add sheet.jpg && git commit -qm "Photo check sheet" && git push -f origin photo-check
+          git checkout --orphan photo-check && git rm -rqf . && (cp /tmp/sheet.jpg sheet.jpg || true) && cp -r /tmp/collages collages
+          git add -A && git commit -qm "Photo check sheet" && git push -f origin photo-check
