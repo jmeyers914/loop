@@ -1,3 +1,2 @@
-dimplB https://www.babykingdom.com.au/cdn/shop/files/fa-_192_1.jpg?v=1754054556&width=1200
-dimplC https://www.babykingdom.com.au/cdn/shop/files/fa-_192.jpg?v=1754054556&width=1200
-doctorB https://shopcmss.com/cdn/shop/products/d6gippjkvetfh4rpvcrn.jpg?v=1708998006&width=1024
+# One "id url" per line. Run the "Photo check" workflow in Actions; it pushes a
+# contact sheet to the photo-check branch (sheet.jpg) so photos can be checked by eye.

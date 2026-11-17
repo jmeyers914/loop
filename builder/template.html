@@ -76,6 +76,10 @@
   .tile .ph img{width:100%; height:100%; object-fit:contain;}
   .tile .ph.name{padding:12px; font-family:'Fraunces',serif; font-style:italic; font-size:1.05rem; text-align:center; line-height:1.15;}
   .tile .tl{font-size:.82rem; font-weight:700; padding:8px 9px; line-height:1.2; min-height:2.6em;}
+  .tile.age{position:relative; cursor:pointer; text-align:left;}
+  .tile.age .tick{position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:2px solid var(--ink); background:var(--white); color:transparent; font:700 .9rem/22px 'DM Sans',sans-serif; text-align:center;}
+  .tile.age[aria-pressed="true"]{background:var(--coral); color:var(--paper);}
+  .tile.age[aria-pressed="true"] .tick{background:var(--coral); color:var(--paper); border-color:var(--paper);}
   .tile.other{border-style:dashed; box-shadow:none; background:var(--paper);}
   .tile.other .ph{background:var(--paper); font-size:2.4rem; color:var(--ink-soft); border-bottom-style:dashed;}
   .opt{text-align:left; margin-bottom:12px; padding:12px 14px;}
@@ -330,19 +334,29 @@
 
   // ============ AGE PICKER (toys) ============
   function pickAges(){
-    const c = CATS[index];
+    const c = CATS[index], pics = c.option_photos || [];
+    const tiles = c.options.map((o, i) => `
+      <button class="tile age" aria-pressed="false" data-v="${esc(o)}">
+        ${pics[i] ? `<div class="ph"><img src="${esc(pics[i])}" alt=""></div>` : `<div class="ph name" style="background:${esc(c.color)}">${esc(o)}</div>`}
+        <div class="tl">${esc(o)}</div>
+        <span class="tick" aria-hidden="true">✓</span>
+      </button>`).join('');
     stage.innerHTML = `
       <div class="panel">
         <div class="kicker">${esc(c.name)}</div>
         <h1>For what ages?</h1>
-        <div class="chips">${c.options.map(o => `<button class="chip" aria-pressed="false">${esc(o)}</button>`).join('')}</div>
+        <p style="margin:-8px 0 12px; color:var(--ink-soft); font-size:.9rem">Pick all that apply.</p>
+        <div class="grid">${tiles}</div>
         <div class="err" id="ageErr"></div>
         <button class="btn coral" id="ageNext" style="margin-top:14px">Next</button>
         <button class="link" id="backNo">Actually, I don't have any</button>
       </div>`;
-    stage.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('ageErr').textContent = ''; }));
+    stage.querySelectorAll('.tile img').forEach(img => img.addEventListener('error', () => {
+      const ph = img.parentElement; ph.className = 'ph name'; ph.style.background = c.color; ph.textContent = img.closest('.tile').dataset.v;
+    }));
+    stage.querySelectorAll('.tile.age').forEach(b => b.addEventListener('click', () => { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('ageErr').textContent = ''; }));
     $('ageNext').addEventListener('click', () => {
-      const picked = [...stage.querySelectorAll('.chip[aria-pressed="true"]')].map(b => b.textContent);
+      const picked = [...stage.querySelectorAll('.tile.age[aria-pressed="true"]')].map(b => b.dataset.v);
       if(!picked.length){ $('ageErr').textContent = 'Pick at least one age.'; return; }
       status(picked.join(', '));
     });

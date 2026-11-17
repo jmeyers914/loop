@@ -9,6 +9,10 @@ Without LOOP_SHEET_URL it falls back to categories.csv next to this file.
 
 One row per category: name, order, color, icon, sqft, intake_only, and three
 "hero" versions (name + photo link). Anything in "hide" drops the row.
+Cards with "options" (like Outgrown toys) can have "option_photos": one group of
+photo links per option, groups split by |, links split by spaces. Each group
+becomes a 3-photo collage on a white square. A card_photo with several links
+becomes a collage too.
 
 Hero photos are downloaded, shrunk and saved into img/, so the game never
 depends on a retailer's server while friends are playing. If a download fails,
@@ -49,8 +53,7 @@ def why(e):
     return type(e).__name__
 
 
-def save_image(src, item_id):
-    out = IMG_DIR / f"{item_id}.jpg"
+def fetch_image(src):
     r = requests.get(src, headers=HEADERS, timeout=25)
     r.raise_for_status()
     im = Image.open(io.BytesIO(r.content))
@@ -59,12 +62,57 @@ def save_image(src, item_id):
         im = im.convert("RGBA")
         bg = Image.new("RGB", im.size, (255, 255, 255))
         bg.paste(im, mask=im.split()[-1])
-        im = bg
-    else:
-        im = im.convert("RGB")
+        return bg
+    return im.convert("RGB")
+
+
+def write_jpg(im, item_id):
+    out = IMG_DIR / f"{item_id}.jpg"
     im.thumbnail((IMG_MAX, IMG_MAX))
     im.save(out, "JPEG", quality=82, optimize=True, progressive=True)
     return f"img/{out.name}"
+
+
+def save_image(src, item_id):
+    return write_jpg(fetch_image(src), item_id)
+
+
+def trim_white(im, tol=18):
+    """Crop the near-white margin around a product shot so it fills its spot."""
+    grey = im.convert("L").point(lambda v: 255 if v < 255 - tol else 0)
+    box = grey.getbbox()
+    return im.crop(box) if box else im
+
+
+COLLAGE = 600
+SPOTS = {  # where 1, 2 or 3 photos sit on the square (x, y, w, h)
+    1: [(40, 40, 520, 520)],
+    2: [(20, 130, 275, 340), (305, 130, 275, 340)],
+    3: [(18, 22, 278, 270), (304, 22, 278, 270), (161, 306, 278, 274)],
+}
+
+
+def save_collage(srcs, item_id):
+    """Download up to 3 photos and arrange them on one white square.
+    Returns (path, list of failed links). Raises if none downloaded."""
+    ims, failed = [], []
+    for src in srcs[:3]:
+        try:
+            ims.append(trim_white(fetch_image(src)))
+        except Exception as e:
+            failed.append(f"{src[:60]}... ({why(e)})")
+    if not ims:
+        raise RuntimeError("; ".join(failed) or "no photos")
+    canvas = Image.new("RGB", (COLLAGE, COLLAGE), (255, 255, 255))
+    for im, (x, y, w, h) in zip(ims, SPOTS[len(ims)]):
+        im = im.copy()
+        im.thumbnail((w, h), Image.LANCZOS)
+        canvas.paste(im, (x + (w - im.width) // 2, y + (h - im.height) // 2))
+    return write_jpg(canvas, item_id), failed
+
+
+def links(cell):
+    return [u for u in str(cell or "").split() if u.startswith("http")]
 
 
 def load_rows():
@@ -128,20 +176,44 @@ def main():
         ckept = IMG_DIR / f"{cid}.jpg"
         if csrc:
             try:
-                card = save_image(csrc, cid)
+                if len(links(csrc)) > 1:
+                    card, bad = save_collage(links(csrc), cid)
+                    problems += [f"{name}: card collage photo failed, left it out: {b}" for b in bad]
+                else:
+                    card = save_image(csrc, cid)
             except Exception as e:
                 if ckept.exists():
                     card = f"img/{ckept.name}"
-                problems.append(f"{name}: card photo failed ({why(e)})")
+                problems.append(f"{name}: card photo failed ({why(e) if not isinstance(e, RuntimeError) else e})")
         if card:
             used.add(f"{cid}.jpg")
         options = [o.strip() for o in row.get("options", "").split("|") if o.strip()]
+        groups = [links(g) for g in row.get("option_photos", "").split("|")] if row.get("option_photos") else []
+        option_photos = []
+        for i, opt in enumerate(options):
+            oid = "o" + hashlib.sha1(f"{name}|{opt}".lower().encode()).hexdigest()[:8]
+            okept = IMG_DIR / f"{oid}.jpg"
+            srcs = groups[i] if i < len(groups) else []
+            photo = None
+            if srcs:
+                try:
+                    photo, bad = save_collage(srcs, oid)
+                    problems += [f"{name} / {opt}: one photo failed, collage has the rest: {b}" for b in bad]
+                except Exception as e:
+                    if okept.exists():
+                        photo = f"img/{okept.name}"
+                    problems.append(f"{name} / {opt}: collage failed ({e}){', kept the old one' if photo else ', tile shows the age instead'}")
+            elif okept.exists():
+                photo = f"img/{okept.name}"
+            if photo:
+                used.add(f"{oid}.jpg")
+            option_photos.append(photo)
         color = row.get("color") if re.fullmatch(r"#[0-9a-fA-F]{6}", row.get("color", "")) else PALETTE[n % 4]
         cats.append({
             "id": slug(name), "name": name, "color": color,
             "icon": row.get("icon") or "ti-box", "sqft": num(row.get("sqft")),
             "intake_only": row.get("intake_only", "").lower() in ("yes", "y", "true", "1"),
-            "heroes": heroes, "options": options, "card": card,
+            "heroes": heroes, "options": options, "option_photos": option_photos, "card": card,
         })
         print(f"  {name}: {sum('photo' in h for h in heroes)}/{len(heroes)} photos")
 

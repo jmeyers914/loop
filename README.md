@@ -9,3 +9,11 @@ Intake game for collecting what baby gear parents have, and what they're done wi
 
 `builder/Code.gs` is a copy of the Sheet's Apps Script, for reference. The "Add to Loop" key is replaced with `KEY_HERE`; the real one lives only in the Sheet's script editor.
 `builder/categories.csv` is the fallback the build uses when `LOOP_SHEET_URL` isn't set.
+
+### Toy age tiles
+The Outgrown toys card shows a 3-toy collage for each age. The links live in the
+`option_photos` column of the Categories tab: one group per age (same order as
+`options`), groups separated by `|`, links inside a group separated by spaces.
+To check new photos before using them, put `id url` lines in
+`builder/tools/photo_candidates.txt` and run the **Photo check** workflow; it
+pushes a contact sheet to the `photo-check` branch.
