@@ -176,8 +176,9 @@
   <div class="sheet">
     <span class="kicker">Last bit</span>
     <h1>Who are we matching?</h1>
-    <p>Your baby's age tells us what you'll need next. Your neighborhood tells us who's close.</p>
+    <p>Your baby's age tells us what you'll need next. Your neighborhood tells us who's close. Your email is how we reach you, no spam.</p>
     <form class="form" id="detailsForm" novalidate>
+      <div id="fEmail2Wrap"><label for="fEmail2">Email</label><input type="email" id="fEmail2" autocomplete="email" placeholder="you@example.com"></div>
       <div><label for="fName">First name</label><input type="text" id="fName" autocomplete="given-name" placeholder="Jamie"></div>
       <div><label for="fBaby">Baby's birthday or due date</label><input type="date" id="fBaby"></div>
       <div><label for="fHood">Neighborhood</label><input type="text" id="fHood" placeholder="Park Slope"></div>
@@ -215,12 +216,7 @@
       <div class="stat"><div class="n" id="statSpace">0</div><div class="l">ready to go</div></div>
       <div class="stat"><div class="n" id="statSave">0</div><div class="l">saving for #2</div></div>
     </div>
-    <p>We'll email you when a family near you needs something you have.</p>
-    <div class="eye" id="eyeBox">
-      <b>Have your eye on anything? 👀</b>
-      <p>Get it from a neighbor for less, and we'll take it off your hands when you're done.</p>
-      <button class="btn sky" id="eyeOpen">Pick what you're after</button>
-    </div>
+    <p id="finishMsg">We'll email you when a family near you needs something you have.</p>
     <button class="btn sun" id="shareBtn">Send this to a parent friend</button>
     <div class="note" id="shareNote"></div>
   </div>
@@ -229,9 +225,10 @@
 <script>
   // ============ CONFIG ============
   const SHEET_URL = '__SHEET_URL__';   // filled in by the build
-  const EMAIL_AFTER = 3;               // email screen after this many cards
+  const EMAIL_AFTER = 0;               // email screen after this many cards (0 = off: email is asked in the end form)
   const DONE_EARLY_AFTER = 12;         // "That's everything I've got" from this card on (needs email)
   const CATS = /*__CATS__*/[];
+  const SHOP_ONLY = /*__SHOP__*/[];   // picker-only items (Sheet rows with shop_only)
 
   // ============ STATE ============
   const ref = new URLSearchParams(location.search).get('from') || '';
@@ -247,7 +244,7 @@
   function progress(){ $('barFill').style.width = Math.round(index / Math.max(1, CATS.length) * 100) + '%'; }
   function actions(on){
     $('actions').classList.toggle('off', !on);
-    $('doneEarly').classList.toggle('hidden', !(on && contact.email && index >= DONE_EARLY_AFTER && index < CATS.length));
+    $('doneEarly').classList.toggle('hidden', !(on && (contact.email || !EMAIL_AFTER) && index >= DONE_EARLY_AFTER && index < CATS.length));
   }
   function toast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1300); }
 
@@ -387,8 +384,8 @@
     answers.push({ category:c.name, have:a.have, version:a.version || '', status:a.status || '', sqft:c.sqft || 0 });
     index++; progress();
     if(contact.email) save(false);
-    if(index === EMAIL_AFTER && !contact.email && index < CATS.length){ stage.innerHTML = ''; show('emailOv'); setTimeout(() => $('fEmail').focus(), 60); }
-    else if(index >= CATS.length){ stage.innerHTML = ''; actions(false); show('detailsOv'); }
+    if(EMAIL_AFTER && index === EMAIL_AFTER && !contact.email && index < CATS.length){ stage.innerHTML = ''; show('emailOv'); setTimeout(() => $('fEmail').focus(), 60); }
+    else if(index >= CATS.length){ stage.innerHTML = ''; actions(false); openEye(); }
     else renderCard();
   }
 
@@ -400,7 +397,7 @@
     if(!$('card') || busy || document.querySelector('.overlay:not(.hidden)')) return;
     if(e.key === 'ArrowRight') choose(true); if(e.key === 'ArrowLeft') choose(false);
   });
-  $('doneEarly').addEventListener('click', () => { if(busy) return; busy = true; stage.innerHTML = ''; actions(false); show('detailsOv'); });
+  $('doneEarly').addEventListener('click', () => { if(busy) return; busy = true; stage.innerHTML = ''; actions(false); openEye(); });
   $('startBtn').addEventListener('click', () => { show(null); if(CATS.length) renderCard(); });
 
   $('emailForm').addEventListener('submit', e => {
@@ -414,8 +411,10 @@
   $('detailsForm').addEventListener('submit', async e => {
     e.preventDefault();
     const name = $('fName').value.trim(), baby = $('fBaby').value, hood = $('fHood').value.trim();
-    if(!name || !baby || !hood){ $('detailsErr').textContent = 'Fill in all three so we can match you.'; return; }
-    Object.assign(contact, { name, baby_birthdate:baby, neighborhood:hood });
+    const email = contact.email || $('fEmail2').value.trim();
+    if(!email || !name || !baby || !hood){ $('detailsErr').textContent = 'Fill in everything so we can match you.'; return; }
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('detailsErr').textContent = 'That email doesn\'t look right.'; return; }
+    Object.assign(contact, { email, name, baby_birthdate:baby, neighborhood:hood });
     $('detailsBtn').disabled = true; $('detailsBtn').textContent = 'Saving…';
     finished = true; await save(true);
     const space = answers.filter(a => a.status === 'space');
@@ -423,9 +422,10 @@
     $('statHave').textContent = answers.filter(a => a.have).length;
     $('statSpace').textContent = space.length;
     $('statSave').textContent = answers.filter(a => a.status === 'saving').length;
+    if(looking.length) $('finishMsg').textContent = "We'll email you when a family near you needs something you have, and when something you're after comes up nearby.";
     show('finishOv');
   });
-  ['fName','fBaby','fHood'].forEach(id => $(id).addEventListener('input', () => $('detailsErr').textContent = ''));
+  ['fEmail2','fName','fBaby','fHood'].forEach(id => $(id).addEventListener('input', () => $('detailsErr').textContent = ''));
 
   $('shareBtn').addEventListener('click', async () => {
     const url = new URL(location.href);
@@ -441,15 +441,19 @@
   const looking = [];                  // category names, plus "Other: …"
   function chip(label){ const b = document.createElement('button'); b.className = 'chip'; b.textContent = label; b.setAttribute('aria-pressed', 'false');
     b.addEventListener('click', () => { b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true'); $('eyeErr').textContent = ''; }); return b; }
-  $('eyeOpen').addEventListener('click', () => {
+  function openEye(){
     const had = new Set(answers.filter(a => a.have).map(a => a.category));
-    const gear = CATS.filter(c => !c.intake_only && !c.options.length);
-    gear.sort((a, b) => had.has(a.name) - had.has(b.name));
-    $('eyeGear').replaceChildren(...gear.map(c => chip(c.name)));
+    const gear = CATS.filter(c => !c.intake_only && !c.options.length).map(c => c.name).concat(SHOP_ONLY);
+    gear.sort((a, b) => had.has(a) - had.has(b));
+    $('eyeGear').replaceChildren(...gear.map(chip));
     const toys = CATS.find(c => c.options.length);
     $('eyeToys').replaceChildren(...(toys ? toys.options.map(o => chip('Toys: ' + o)) : []));
     show('eyeOv');
-  });
+  }
+  function toDetails(){
+    $('fEmail2Wrap').classList.toggle('hidden', !!contact.email);
+    show('detailsOv'); setTimeout(() => (contact.email ? $('fName') : $('fEmail2')).focus(), 60);
+  }
   $('eyeOtherBtn').addEventListener('click', () => {
     const on = $('eyeOtherBtn').getAttribute('aria-pressed') !== 'true';
     $('eyeOtherBtn').setAttribute('aria-pressed', on); $('eyeOtherWrap').classList.toggle('hidden', !on); if(on) $('eyeOther').focus();
@@ -460,12 +464,9 @@
     if(other && $('eyeOtherBtn').getAttribute('aria-pressed') === 'true') picks.push('Other: ' + other);
     if(!picks.length){ $('eyeErr').textContent = 'Pick at least one, or tap Not right now.'; return; }
     looking.splice(0, looking.length, ...picks);
-    $('eyeSave').disabled = true; $('eyeSave').textContent = 'Saving…';
-    await save(true);
-    $('eyeBox').innerHTML = '<b>Got it.</b><p>We\'ll let you know when one comes up nearby.</p>';
-    show('finishOv');
+    toDetails();
   });
-  $('eyeSkip').addEventListener('click', () => show('finishOv'));
+  $('eyeSkip').addEventListener('click', () => { looking.length = 0; toDetails(); });
 
   // ============ SAVE (to the Google Sheet) ============
   function payload(done){

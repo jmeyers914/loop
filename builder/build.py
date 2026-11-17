@@ -13,6 +13,8 @@ Cards with "options" (like Outgrown toys) can have "option_photos": one group of
 photo links per option, groups split by |, links split by spaces. Each group
 becomes a 3-photo collage on a white square. A card_photo with several links
 becomes a collage too.
+Rows with "shop_only" set aren't swiping cards; they only show up as choices
+in "Have your eye on anything?" (e.g. High chair).
 
 Hero photos are downloaded, shrunk and saved into img/, so the game never
 depends on a retailer's server while friends are playing. If a download fails,
@@ -138,6 +140,10 @@ def num(v, default=0):
 def main():
     rows = [{k.strip().lower(): (v or "").strip() for k, v in r.items() if k} for r in load_rows()]
     rows = [r for r in rows if r.get("category") and not r.get("hide")]
+    yes = ("yes", "y", "true", "1")
+    shop_only = [r["category"] for r in sorted(rows, key=lambda r: num(r.get("order"), 999))
+                 if r.get("shop_only", "").lower() in yes]
+    rows = [r for r in rows if r.get("shop_only", "").lower() not in yes]
     rows.sort(key=lambda r: num(r.get("order"), 999))
     IMG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -221,6 +227,8 @@ def main():
     marker = "/*__CATS__*/[]"
     assert marker in tpl, "template.html is missing the CATS marker"
     payload = json.dumps(cats, ensure_ascii=False, indent=1).replace("</", "<\\/")
+    assert "/*__SHOP__*/[]" in tpl, "template.html is missing the SHOP marker"
+    tpl = tpl.replace("/*__SHOP__*/[]", json.dumps(shop_only, ensure_ascii=False).replace("</", "<\\/"))
     (DIST / "index.html").write_text(tpl.replace(marker, payload).replace("__SHEET_URL__", SHEET_URL))
 
     for old in IMG_DIR.glob("*.jpg"):      # drop photos nothing uses any more
